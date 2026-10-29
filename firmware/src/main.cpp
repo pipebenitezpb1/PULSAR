@@ -6,11 +6,14 @@
 // (Pong, Simón dice, Alunizaje) · azul + amarillo = modo exhibición · azul + blanco = brillo · rojo + blanco = pulso
 // a golpes (mantener 1,5 s lo apaga) · los 4 juntos = reinicio. OJO: la variable izq es A1 = deslizante físico DERECHO
 // (y la mitad 0 de la tira, que está a su lado); der es A2 = el físico IZQUIERDO.
+// Récords (Simón, Asteroides, racha de Alunizaje) en la memoria flash: sobreviven al desenchufar.
+// "o1" activa el espejo de la OLED: la caja manda "o" + 1024 bytes en base64 (~12 por s) mientras lleguen "o1" cada <3 s.
 // El dashboard manda líneas: "n" = siguiente modo; "e" + 32 hex = espectro del audio (16 bandas 0-255) que se dibuja en la OLED.
 #include <Arduino.h>
 #include <Wire.h>
 #include <U8g2lib.h>
 #include <Adafruit_NeoPixel.h>
+#include <Preferences.h>
 
 // Pines XIAO ESP32-C3 (A0/GPIO2 y A3/GPIO5 no sirven para los sliders: arranque y ADC2)
 const int PIN_SLIDER_IZQ = A1;   // GPIO3
@@ -120,6 +123,8 @@ void pintarTira(int lado, int nivel, bool invertida, unsigned long t) {
 const int BANDAS = 16;
 uint8_t espectro[BANDAS], pico[BANDAS];
 unsigned long tEspectro = 0;
+bool espejo = false;
+unsigned long tEspejo = 0;
 char linea[48];
 int largo = 0;
 
@@ -131,6 +136,7 @@ void leerSerial() {
     if (c != '\n') { if (largo < (int)sizeof(linea) - 1) linea[largo++] = c; continue; }
     linea[largo] = 0;
     if (largo == 1 && linea[0] == 'n') modo = (modo + 1) % N_MODOS;
+    if (largo == 2 && linea[0] == 'o') { espejo = linea[1] == '1'; tEspejo = millis(); }
     if (largo == 1 + 2 * BANDAS && linea[0] == 'e') {
       for (int i = 0; i < BANDAS; i++) espectro[i] = hex(linea[1 + 2 * i]) * 16 + hex(linea[2 + 2 * i]);
       tEspectro = millis();
@@ -162,6 +168,13 @@ enum { A_CUBO, A_ESTRELLAS, A_COHETE, A_PLANETA, A_INFINITO, A_RADAR, A_ASTEROID
 const char *NOMBRE_ANIM[N_ANIM] = {"CUBO 3D", "HIPERESPACIO", "COHETE", "PLANETA", "AL INFINITO", "RADAR",
                                    "ASTEROIDES", "GALAXIA", "AGUJERO NEGRO", "FUGACES", "TIERRA",
                                    "ESPECTRO", "TUNEL", "ONDA", "OCTAEDRO"};
+Preferences memoria;
+int recSimon = 0, recAsteroides = 0, recLuna = 0, rachaLuna = 0;
+bool nuevoRecord(const char *clave, int &record, int valor) {      // guarda solo si se superó
+  if (valor <= record) return false;
+  record = valor; memoria.putInt(clave, valor);
+  return true;
+}
 char avisoTxt[22] = "";
 unsigned long tAviso = 0;
 void aviso(const char *txt) { strncpy(avisoTxt, txt, sizeof avisoTxt - 1); tAviso = millis(); }
@@ -384,6 +397,12 @@ void dibujarAsteroides(int izq, int der, float g) {      // la nave dispara sola
   for (auto &r : roca) {
     r.y += r.v * vel;
     if (r.y > 70) r = {(float)random(8, 120), -8, random(3, 8) / 10.0f, (int)random(2, 6)};
+    if (r.y > 52 && r.y < 62 && fabsf(r.x - nx) < r.r + 4) {     // la roca chocó con la nave
+      if (nuevoRecord("ast", recAsteroides, puntos)) aviso("NUEVO RECORD!");
+      destello(0, 0xFF0000); destello(1, 0xFF0000);
+      puntos = 0;
+      r = {(float)random(8, 120), -8, random(3, 8) / 10.0f, (int)random(2, 6)};
+    }
     for (auto &b : bala)
       if (b[1] >= 0 && fabsf(b[0] - r.x) <= r.r + 1 && fabsf(b[1] - r.y) <= r.r + 1) {   // impacto
         for (int k = 0, n = 0; k < 24 && n < 6; k++)
@@ -396,9 +415,11 @@ void dibujarAsteroides(int izq, int der, float g) {      // la nave dispara sola
   for (int k = 0; k < 24; k++)
     if (vida[k] > 0) { chispa[k][0] += chispa[k][2]; chispa[k][1] += chispa[k][3]; oled.drawPixel(chispa[k][0], chispa[k][1]); vida[k]--; }
   oled.drawTriangle(nx - 5, 62, nx + 5, 62, nx, 54);    // nave
-  char txt[8]; snprintf(txt, sizeof txt, "%d", puntos);
+  char txt[16]; snprintf(txt, sizeof txt, "%d", puntos);
   oled.setFont(u8g2_font_5x7_tf);
   oled.drawStr(127 - 5 * strlen(txt), 7, txt);
+  snprintf(txt, sizeof txt, "REC %d", max(recAsteroides, puntos));
+  oled.drawStr(0, 7, txt);
 }
 
 void dibujarGalaxia(int izq, int der, float g) {         // espiral de dos brazos · izq = giro · der = tamaño
@@ -523,13 +544,17 @@ void simonBoton(int i) {
   if (faseSimon == 2) { if (millis() - tSimon > 800) simonIniciar(); return; }
   if (faseSimon != 1) return;
   luzSimon = i; tLuzBoton = millis();
-  if (i != secuencia[idxSimon]) { faseSimon = 2; tSimon = millis(); return; }
+  if (i != secuencia[idxSimon]) {
+    faseSimon = 2; tSimon = millis();
+    if (nuevoRecord("simon", recSimon, nivel - 1)) aviso("NUEVO RECORD!");
+    return;
+  }
   if (++idxSimon == nivel) { nivel = min(nivel + 1, 40); faseSimon = 0; tSimon = millis() + 700; }
 }
 void dibujarSimon() {
   oled.setFont(u8g2_font_6x12_tf);
   oled.drawStr(0, 10, "SIMON DICE");
-  char t[12]; snprintf(t, sizeof t, "NIVEL %d", nivel);
+  char t[20]; snprintf(t, sizeof t, "NIVEL %d", nivel);
   oled.drawStr(128 - 6 * strlen(t), 10, t);
   if (faseSimon == 0) {
     long dt = (long)(millis() - tSimon);
@@ -548,7 +573,7 @@ void dibujarSimon() {
     oled.setFont(u8g2_font_logisoso16_tr);
     oled.drawStr(4, 40, "PERDISTE");
     oled.setFont(u8g2_font_6x12_tf);
-    snprintf(t, sizeof t, "llegaste a %d", nivel - 1);
+    snprintf(t, sizeof t, "nivel %d  rec %d", nivel - 1, recSimon);
     oled.drawStr(4, 58, t);
   }
 }
@@ -573,6 +598,8 @@ void dibujarLuna(int izq, int der) {
     if (ly + 4 >= alturaSuelo(lx)) {
       bool enPlataforma = lx >= plataforma * 16 + 3 && lx <= (plataforma + 1) * 16 - 3;
       estadoLuna = enPlataforma && lvy < 0.8f && fabsf(lvx) < 0.6f ? 1 : 2;
+      rachaLuna = estadoLuna == 1 ? rachaLuna + 1 : 0;
+      if (nuevoRecord("luna", recLuna, rachaLuna)) aviso("NUEVO RECORD!");
       destello(0, estadoLuna == 1 ? 0x00FF60 : 0xFF0000); destello(1, estadoLuna == 1 ? 0x00FF60 : 0xFF0000);
       ly = alturaSuelo(lx) - 4;
     }
@@ -587,6 +614,8 @@ void dibujarLuna(int izq, int der) {
   oled.drawFrame(0, 0, 42, 6); oled.drawBox(1, 1, combustible * 0.4f, 4);
   char t[16]; snprintf(t, sizeof t, "V %.1f", lvy);
   oled.drawStr(90, 6, t);
+  snprintf(t, sizeof t, "x%d rec %d", rachaLuna, recLuna);
+  oled.drawStr(46, 6, t);
   if (estadoLuna) {
     oled.setFont(u8g2_font_6x12_tf);
     oled.setDrawColor(0); oled.drawBox(18, 16, 92, 24); oled.setDrawColor(1); oled.drawFrame(18, 16, 92, 24);
@@ -604,6 +633,14 @@ void dibujarMenuJuegos() {
     oled.setDrawColor(1);
   }
   oled.setFont(u8g2_font_5x7_tf);
+  char t[12];
+  int rec[3] = {-1, recSimon, recLuna};
+  for (int i = 1; i < 3; i++) {
+    snprintf(t, sizeof t, "rec %d", rec[i]);
+    if (i == menuSel) oled.setDrawColor(0);
+    oled.drawStr(92, 23 + i * 13, t);
+    oled.setDrawColor(1);
+  }
   oled.drawStr(0, 63, "blanco elige  amarillo juega");
 }
 void juegoBoton(int i) {                                  // botón suelto dentro de los juegos
@@ -628,6 +665,23 @@ void dibujarPrueba(int izq, int der, int apretado) {
   oled.drawBox(1, 35, der * 126 / 100, 10);
   oled.drawStr(0, 62, apretado >= 0 ? NOMBRE_BOTON[apretado] : "-");
   oled.drawStr(70, 62, NOMBRE_MODO[modo]);
+}
+
+void mandarEspejo() {                                    // la pantalla, tal cual, en base64 (1024 bytes → 1368 caracteres)
+  static unsigned long ultimo = 0;
+  if (!espejo || millis() - tEspejo > 3000 || millis() - ultimo < 80) return;
+  ultimo = millis();
+  static const char B64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  static char out[1 + 1368 + 2];
+  const uint8_t *b = oled.getBufferPtr();
+  int n = 0;
+  out[n++] = 'o';
+  for (int i = 0; i < 1024; i += 3) {                     // 342 grupos: el último solo trae el byte 1023
+    uint32_t v = (b[i] << 16) | (i + 1 < 1024 ? b[i + 1] << 8 : 0) | (i + 2 < 1024 ? b[i + 2] : 0);
+    out[n++] = B64[v >> 18 & 63]; out[n++] = B64[v >> 12 & 63]; out[n++] = B64[v >> 6 & 63]; out[n++] = B64[v & 63];
+  }
+  out[n++] = '\n';
+  Serial.write((const uint8_t *)out, n);
 }
 
 void dibujarPantalla(int izq, int der, int apretado) {
@@ -665,6 +719,7 @@ void dibujarPantalla(int izq, int der, int apretado) {
     oled.drawStr(3, 10, avisoTxt);
   }
   oled.sendBuffer();
+  mandarEspejo();
 }
 
 void galon(int cx, int cy, int a) {                       // galón de Star Command (chevron)
@@ -712,6 +767,8 @@ void setup() {
   tiras.begin();
   tiras.setBrightness(BRILLOS[0]);
   tiras.show();
+  memoria.begin("ctrl04l", false);
+  recSimon = memoria.getInt("simon", 0); recAsteroides = memoria.getInt("ast", 0); recLuna = memoria.getInt("luna", 0);
   arranque();
 }
 
@@ -773,6 +830,13 @@ void loop() {
       if (juego != J_NADA) juegoBoton(i);
       else if (i == 2) { modoPrevio = modo; modo = (modo + 1) % N_MODOS; tBlanco = millis(); }   // blanco solo = luces
     }
+  static unsigned long tCuatro = 0;                                   // mantener los 4 juntos 3 s = borrar récords
+  if (ahora[0] && ahora[1] && ahora[2] && ahora[3]) {
+    if (!tCuatro) tCuatro = millis();
+    else if (millis() - tCuatro > 3000) {
+      memoria.clear(); recSimon = recAsteroides = recLuna = 0; aviso("RECORDS BORRADOS"); tCuatro = ~0UL;
+    }
+  } else tCuatro = 0;
   if (pulso && ahora[0] && ahora[2] && tRB && millis() - tRB > 1500) { pulso = false; tRB = 0; aviso("PULSO OFF"); }   // mantener rojo + blanco
   if (!(ahora[0] && ahora[2])) tRB = 0;
   if (exhibicion && juego == J_NADA && !pantallaPrueba && millis() - tExhibicion > 10000) {   // exhibición: cambia sola
@@ -794,10 +858,11 @@ void loop() {
     ultimo = millis();
     int b[4];
     for (int i = 0; i < 4; i++) b[i] = digitalRead(PIN_BOTON[i]) == LOW;
-    Serial.printf("{\"izq\":%d,\"der\":%d,\"mv\":[%d,%d],\"bot\":[%d,%d,%d,%d],\"modo\":\"%s\",\"anim\":\"%s\",\"jg\":\"%s\"}\n",
+    Serial.printf("{\"izq\":%d,\"der\":%d,\"mv\":[%d,%d],\"bot\":[%d,%d,%d,%d],\"modo\":\"%s\",\"anim\":\"%s\",\"jg\":\"%s\",\"rec\":[%d,%d,%d]}\n",
                   izq, der, mvCrudo[0], mvCrudo[1], b[0], b[1], b[2], b[3], NOMBRE_MODO[modo],
                   pantallaPrueba ? "PRUEBA" : NOMBRE_ANIM[anim],
-                  juego == J_NADA ? "" : juego == J_MENU ? "MENU" : NOMBRE_JUEGO[juego - J_PONG]);
+                  juego == J_NADA ? "" : juego == J_MENU ? "MENU" : NOMBRE_JUEGO[juego - J_PONG],
+                  recSimon, recAsteroides, recLuna);
   }
   delay(15);
 }

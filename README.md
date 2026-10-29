@@ -7,7 +7,7 @@ Controlador MIDI-style de escritorio: dos faders deslizantes, cuatro pulsadores,
 
 ![CTRL-04L de frente](docs/renders/vistaL_frente.png)
 
-> 📘 **[Manual de uso](MANUAL.md)**: cómo usar cada control, las combinaciones, los juegos y el sintetizador web. También en [PDF para imprimir](docs/manual_CTRL-04L.pdf).
+> 📘 **[Manual de uso](MANUAL.md)**: cómo usar cada control, las combinaciones, los juegos y el sintetizador web. También en [cuadernillo para imprimir](docs/manual_CTRL-04L_cuadernillo.pdf) (A4 a doble cara, volteando por el borde corto, doblado al medio) y en [PDF para pantalla](docs/manual_CTRL-04L.pdf).
 >
 > **Video de demostración:** _(pendiente: pegar aquí el enlace de YouTube)_
 
@@ -160,6 +160,7 @@ El dashboard le puede mandar líneas de vuelta:
 | Línea | Efecto |
 |---|---|
 | `n` | siguiente modo de luces |
+| `o1` / `o0` | espejo de la OLED: la caja manda `o` + los 1024 bytes de la pantalla en base64 (~10 por segundo) |
 | `e` + 32 caracteres hex | espectro del audio (16 bandas, 0–255) que se dibuja en la OLED |
 
 ---

@@ -80,6 +80,13 @@
   #onda { height: 56px; margin: 12px 0 10px; }
   #mic { width: 100%; }
   #mic.lleno { background: var(--alert); }
+  #oled { width: 100%; aspect-ratio: 2; display: block; background: #05070d; border: 2px solid var(--ink); image-rendering: pixelated; }
+  #panelOled:fullscreen { background: #05070d; display: flex; flex-direction: column; justify-content: center; padding: 3vh 3vw; }
+  #panelOled:fullscreen h2, #panelOled:fullscreen .fila-oled { display: none; }
+  #panelOled:fullscreen #oled { border: 0; max-height: 94vh; width: auto; margin: auto; }
+  .fila-oled { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-top: 12px; }
+  #records { font: 12px var(--mono); color: var(--muted); }
+  select { font: 13px var(--mono); border: 2px solid var(--ink); background: var(--cream); padding: 4px; max-width: 60%; }
   footer { text-align: center; font: 11px var(--mono); color: var(--muted); padding: 0 16px 28px; letter-spacing: .08em; }
   @media (min-width: 1100px) { .ancho2 { grid-column: span 2; } }
 </style>
@@ -97,6 +104,26 @@
 </header>
 
 <main>
+  <section class="panel ancho2" id="panelOled">
+    <h2 data-fig="FIG. 00">Pantalla de la caja</h2>
+    <canvas id="oled" width="1024" height="512"></canvas>
+    <div class="fila-oled">
+      <span id="records">Récords · Simón — · Asteroides — · Alunizaje —</span>
+      <button id="proyectar">Pantalla completa</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 data-fig="FIG. 07">Controlador MIDI</h2>
+    <div class="audio">
+      <div><span>Salida</span><select id="midiSalida"><option>— activa MIDI —</option></select></div>
+      <div><span>Fader izq. · der.</span><b>CC 20 · CC 21</b></div>
+      <div><span>Rojo · azul · blanco · amarillo</span><b>notas 36 · 37 · 38 · 39</b></div>
+      <div><span>Último mensaje</span><b id="midiUltimo">—</b></div>
+    </div>
+    <button id="midi" style="width:100%;margin-top:12px">Activar MIDI</button>
+    <div class="cuenta">Para Ableton o GarageBand: en Windows crea un puerto con loopMIDI; en Mac activa el «Bus IAC» en Configuración de Audio MIDI. Después elígelo aquí y como entrada en tu programa.</div>
+  </section>
   <section class="panel">
     <h2 data-fig="FIG. 01">Faders (continuo)</h2>
     <div class="faders">
@@ -209,6 +236,8 @@ function recibir(crudo) {
     if (!b && previo[i]) soltado(i);
   });
   cambiarBanco(d.modo);
+  enviarMidi(d);
+  if (d.rec) $("records").textContent = `Récords · Simón ${d.rec[0]} · Asteroides ${d.rec[1]} · Alunizaje ${d.rec[2]} seguidos`;
   previo = d.bot;
   audioFaders(d.izq, d.der);
   $("modo").textContent = d.jg ? "JUEGO · " + d.jg : d.modo;
@@ -247,6 +276,8 @@ async function conectar() {
   } catch (e) { $("estado").textContent = "No se conectó: " + e.message; return; }
   pararDemo();
   $("estado").textContent = "Conectado"; $("estado").className = "ok"; $("siguiente").disabled = false;
+  const vivo = setInterval(() => enviar("o1"), 1000);   // mantiene encendido el espejo de la OLED
+  enviar("o1");
   escritor = puerto.writable.getWriter();
   const lector = puerto.readable.pipeThrough(new TextDecoderStream()).getReader();
   let resto = "";
@@ -257,11 +288,13 @@ async function conectar() {
       const partes = (resto + value).split("\n"); resto = partes.pop();
       for (const l of partes) {
         const linea = l.trim(); if (!linea) continue;
+        if (linea[0] === "o") { dibujarEspejo(linea.slice(1)); continue; }   // cuadro de la OLED
         registrar(linea);
         try { recibir(JSON.parse(linea)); } catch { /* línea incompleta al conectar */ }
       }
     }
   } catch (e) { /* cable desconectado */ }
+  clearInterval(vivo);
   $("estado").textContent = "Desconectado"; $("estado").className = ""; $("siguiente").disabled = true;
 }
 
@@ -523,6 +556,60 @@ async function mostrarRapidas() {
   }
 }
 mostrarRapidas();
+
+// ---------- Espejo de la OLED: 1024 bytes (8 páginas × 128 columnas, bit 0 arriba) ----------
+// La pantalla va girada 180° en la caja (U8G2_R2): se dibuja al revés del búfer. Las 16 filas de la
+// franja amarilla del módulo bicolor son las filas 0-15 del búfer, que en la caja quedan abajo.
+const oc = $("oled").getContext("2d");
+function dibujarEspejo(b64) {
+  let bin;
+  try { bin = atob(b64); } catch { return; }
+  if (bin.length < 1024) return;
+  const E = 8;                                          // 1024 / 128
+  oc.fillStyle = "#05070d"; oc.fillRect(0, 0, 1024, 512);
+  for (let p = 0; p < 8; p++)
+    for (let x = 0; x < 128; x++) {
+      const v = bin.charCodeAt(p * 128 + x);
+      if (!v) continue;
+      for (let bit = 0; bit < 8; bit++) if (v >> bit & 1) {
+        const fila = p * 8 + bit;
+        oc.fillStyle = fila < 16 ? "#ffd23c" : "#4fc3ff";
+        oc.fillRect((127 - x) * E, (63 - fila) * E, E - 1, E - 1);
+      }
+    }
+}
+$("proyectar").onclick = () => $("panelOled").requestFullscreen && $("panelOled").requestFullscreen();
+
+// ---------- Controlador MIDI (Web MIDI): la página reenvía la caja a un puerto MIDI ----------
+let midiOut = null, midiPrevio = {cc20: -1, cc21: -1, bot: [0, 0, 0, 0]};
+const NOTAS = [36, 37, 38, 39];                         // C1..D#1: los primeros pads de un Drum Rack de Ableton
+$("midi").onclick = async () => {
+  if (!navigator.requestMIDIAccess) { $("midiUltimo").textContent = "este navegador no tiene Web MIDI"; return; }
+  try {
+    const acceso = await navigator.requestMIDIAccess();
+    const llenar = () => {
+      const sel = $("midiSalida"), salidas = [...acceso.outputs.values()];
+      sel.innerHTML = salidas.length ? "" : "<option>— no hay puertos MIDI —</option>";
+      salidas.forEach(o => sel.append(new Option(o.name, o.id)));
+      midiOut = salidas.find(o => o.id === sel.value) || salidas[0] || null;
+      sel.onchange = () => midiOut = acceso.outputs.get(sel.value);
+    };
+    llenar(); acceso.onstatechange = llenar;
+    $("midi").textContent = "MIDI activo"; $("midi").classList.add("lleno");
+  } catch (e) { $("midiUltimo").textContent = "sin permiso MIDI"; }
+};
+function enviarMidi(d) {
+  if (!midiOut) return;
+  const msg = (bytes, txt) => { midiOut.send(bytes); $("midiUltimo").textContent = txt; };
+  const cc20 = Math.round(d.izq * 1.27), cc21 = Math.round(d.der * 1.27);
+  if (cc20 !== midiPrevio.cc20) { msg([0xB0, 20, cc20], "CC 20 = " + cc20); midiPrevio.cc20 = cc20; }
+  if (cc21 !== midiPrevio.cc21) { msg([0xB0, 21, cc21], "CC 21 = " + cc21); midiPrevio.cc21 = cc21; }
+  if (!d.jg) d.bot.forEach((b, i) => {                  // en los juegos los botones no tocan notas
+    if (b && !midiPrevio.bot[i]) msg([0x90, NOTAS[i], 100], "nota " + NOTAS[i] + " on");
+    if (!b && midiPrevio.bot[i]) msg([0x80, NOTAS[i], 0], "nota " + NOTAS[i] + " off");
+  });
+  midiPrevio.bot = d.bot;
+}
 
 $("conectar").onclick = conectar;
 let ocupado = false;                                // una escritura serial a la vez

@@ -121,6 +121,7 @@ Cada pulsación del **blanco** pasa al siguiente modo. Después del último vuel
 | **Rojo + blanco** | **pulso a golpes**: tócalo 3 o 4 veces al ritmo que quieras y las luces y animaciones laten a ese pulso; la pantalla muestra los BPM. Mantenerlo 1,5 s lo apaga |
 | **Amarillo + blanco** | pantalla de prueba (niveles de los faders, botón apretado y modo) |
 | **Los 4 juntos** | **reinicio**: todo vuelve a como parte |
+| **Los 4 juntos 3 segundos** | borra los récords de los juegos |
 
 ---
 
@@ -136,6 +137,8 @@ Cada pulsación del **blanco** pasa al siguiente modo. Después del último vuel
 | Rojo + amarillo | salir de los juegos |
 
 Mientras juegas, los botones son del juego: el blanco no cambia las luces y la web no dispara audio con ellos.
+
+**Récords:** la caja guarda el mejor nivel de **Simón**, el mejor puntaje de **Asteroides** y la mejor racha de **Alunizaje** en su memoria, así que no se pierden al desenchufarla. El menú muestra cada récord y aparece **NUEVO RECORD!** cuando lo superas. Para borrarlos, mantén los 4 botones juntos 3 segundos.
 
 ### Pong (2 jugadores)
 
@@ -158,6 +161,11 @@ Mientras juegas, los botones son del juego: el blanco no cambia las luces y la w
 - Hay que posarse sobre la **plataforma** (la franja gruesa) despacio y derecho.
 - Arriba a la izquierda está el combustible y arriba a la derecha la velocidad de caída.
 - Luces verdes: ¡alunizaste! Rojas: te estrellaste. Cualquier botón vuelve a empezar.
+- Arriba se ve tu **racha** de alunizajes seguidos y el récord.
+
+### Asteroides (animación)
+
+En la animación **Asteroides** la nave dispara sola y tú la mueves con el fader izquierdo. Si una roca la toca, el puntaje vuelve a cero; el mejor queda guardado como récord.
 
 ---
 
@@ -177,6 +185,8 @@ La caja se conecta a una página web que muestra todo en tiempo real y la convie
 
 ### Qué muestra la página
 
+- **Pantalla de la caja:** la OLED copiada en grande, en vivo, con sus colores reales (franja amarilla y azul). **Pantalla completa** la deja sola en la pantalla, ideal para proyectarla en clases.
+- **Récords** de los juegos, leídos de la caja.
 - **Faders:** porcentaje y voltaje de cada uno.
 - **Botones:** se iluminan al apretarlos y dicen qué hace cada uno en el banco activo.
 - **Luces laterales:** imitan lo que hace la caja.
@@ -219,6 +229,24 @@ Los colores siguientes (amarillo, naranjo, rosado, blanco y los efectos) repiten
 
 **Con el micrófono:** aprieta **Usar micrófono** (el navegador pide permiso). Desde ese momento los pads también graban tu voz o lo que suene en la sala. El micrófono no sale por los parlantes, así que no se acopla.
 
+### Controlador MIDI
+
+La página puede reenviar la caja como un **controlador MIDI** a programas de música como Ableton Live, GarageBand o FL Studio.
+
+| Control | Mensaje MIDI (canal 1) |
+|---|---|
+| Fader izquierdo | CC 20 (0–127) |
+| Fader derecho | CC 21 (0–127) |
+| Rojo · azul · blanco · amarillo | notas 36 · 37 · 38 · 39 (los primeros pads de un Drum Rack) |
+
+1. Crea un puerto MIDI virtual:
+   - **Windows:** instala **loopMIDI** y crea un puerto (por ejemplo "CTRL-04L").
+   - **Mac:** abre **Configuración de Audio MIDI → Estudio MIDI**, doble clic en **Bus IAC** y marca **El dispositivo está conectado**.
+2. En la página aprieta **Activar MIDI** y elige ese puerto en **Salida**.
+3. En tu programa, activa ese puerto como entrada MIDI. En Ableton, usa **MIDI Map** para asignar los faders a cualquier perilla.
+
+> La caja no aparece sola como dispositivo MIDI por USB: su chip (ESP32-C3) no lo permite. La página hace de puente, así que debe quedar abierta y conectada.
+
 ### La pantalla baila con la música
 
 Con una canción sonando, la página le manda el espectro a la caja 25 veces por segundo: la animación **Espectro** muestra 16 barras y todas las demás laten con los graves.
@@ -235,6 +263,8 @@ Con una canción sonando, la página le manda el espectro a la caja 25 veces por
 | No suena nada | Carga un MP3 y revisa que el estado diga **sonando** (amarillo en el banco Reproductor). Revisa el volumen del computador y que no esté activo el **silencio** (banco Espacio). |
 | Los botones hacen cosas raras | **Los 4 juntos** reinician todo. Revisa si estás dentro de un juego (la pantalla lo muestra; rojo + amarillo sale). |
 | Las luces encandilan | **Azul + blanco** hasta "BRILLO BAJO". |
+| Ableton o GarageBand no reciben MIDI | Revisa que el puerto virtual exista (loopMIDI o Bus IAC), que esté elegido en **Salida** y activado como entrada en el programa. La página debe seguir abierta. |
+| La pantalla de la caja no aparece en la web | Solo funciona con la caja **conectada** (no en modo demo). Desconecta y vuelve a conectar. |
 | La pantalla quedó en la de prueba | **Amarillo + blanco** la cierra. |
 | La animación cambia sola | Está el modo exhibición: **azul + amarillo** lo apaga. |
 
@@ -266,6 +296,8 @@ pio run -t upload
 | Pantalla | OLED 0,96" monocromática, 128 × 64 |
 | Luces | 8 LED RGB direccionables (4 por lado) |
 | Conexión | USB-C (energía + datos serie 115200 baudios, mensajes JSON) |
+| MIDI | a través de la página (Web MIDI): 2 CC y 4 notas |
+| Memoria | récords guardados en la flash del ESP32 |
 | Alimentación | 5 V por USB |
 | Carcasa | impresión 3D + acrílico negro 3 mm cortado y grabado con láser |
 | Medidas | 92 × 97 mm de base |
