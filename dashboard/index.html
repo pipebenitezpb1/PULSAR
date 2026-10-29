@@ -211,7 +211,7 @@ function recibir(crudo) {
   cambiarBanco(d.modo);
   previo = d.bot;
   audioFaders(d.izq, d.der);
-  $("modo").textContent = d.modo;
+  $("modo").textContent = d.jg ? "JUEGO · " + d.jg : d.modo;
   historia.push({t: performance.now(), izq: d.izq, der: d.der, bot: d.bot.some(Boolean)});
 }
 
@@ -412,6 +412,7 @@ function cambiarBanco(modo) {
   $("c2").textContent = "Cambia luces y banco"; $("c3").textContent = BANCOS[k].f[2].n;
 }
 function pulsado(i, bot) {
+  if (ultimo.jg) return;                                // la caja está en un juego: los botones son del juego
   if (bot[PAREJA[i]]) {                                 // la pareja ya estaba apretada: es combinación
     enCombo[i] = enCombo[PAREJA[i]] = true;
     clearTimeout(pendiente[PAREJA[i]]); delete pendiente[PAREJA[i]];

@@ -2,7 +2,10 @@
 // Cada slider llena su mitad de la tira desde abajo, con fundido suave entre LED;
 // cada pulsación del botón blanco pasa al siguiente modo (colores fijos y efectos). La OLED muestra niveles y modo. El serial manda una línea JSON cada 50 ms (115200)
 // para el dashboard web: {"izq":0-100,"der":0-100,"mv":[mV,mV],"bot":[r,a,b,y],"modo":"..."}.
-// Combinaciones: amarillo + blanco = pantalla de prueba (on/off) · rojo + azul = siguiente animación de la OLED.
+// Combinaciones: rojo + azul = siguiente animación · amarillo + blanco = pantalla de prueba · rojo + amarillo = juegos
+// (Pong, Simón dice, Alunizaje) · azul + amarillo = modo exhibición · azul + blanco = brillo · rojo + blanco = pulso
+// a golpes (mantener 1,5 s lo apaga) · los 4 juntos = reinicio. OJO: la variable izq es A1 = deslizante físico DERECHO
+// (y la mitad 0 de la tira, que está a su lado); der es A2 = el físico IZQUIERDO.
 // El dashboard manda líneas: "n" = siguiente modo; "e" + 32 hex = espectro del audio (16 bandas 0-255) que se dibuja en la OLED.
 #include <Arduino.h>
 #include <Wire.h>
@@ -48,6 +51,20 @@ const char *NOMBRE_MODO[N_MODOS] = {"VERDE", "ROJO", "AZUL", "CIAN", "MORADO", "
                                     "ROSADO", "BLANCO", "VUMETRO", "ARCOIRIS", "RESPIRA", "FUEGO", "LASER"};
 int modo = 0;
 float mostrado[2] = {0, 0};               // LED encendidos (con decimales), persigue al slider con inercia
+const uint8_t BRILLOS[3] = {80, 20, 170};
+const char *NOMBRE_BRILLO[3] = {"BRILLO NORMAL", "BRILLO BAJO", "BRILLO ALTO"};
+int brilloSel = 0;
+bool pulso = false;                       // pulso a golpes (rojo + blanco)
+unsigned long periodoPulso = 500, tPulso = 0;
+unsigned long tDestello[2] = {0, 0};      // destello de una mitad de la tira (juegos)
+uint32_t colorDestello[2];
+
+float envolventePulso() {                 // 1 en cada golpe, cae rápido
+  if (!pulso) return 0;
+  unsigned long fase = (millis() - tPulso) % periodoPulso;
+  return expf(-fase / 120.0f);
+}
+void destello(int lado, uint32_t c) { tDestello[lado] = millis(); colorDestello[lado] = c; }
 
 // Color de un LED según el modo; pos = 0 abajo .. LEDS_POR_TIRA-1 arriba
 uint32_t colorModo(int pos, int lado, unsigned long t) {
@@ -93,8 +110,9 @@ void pintarTira(int lado, int nivel, bool invertida, unsigned long t) {
     int led = lado * LEDS_POR_TIRA + (invertida ? LEDS_POR_TIRA - 1 - pos : pos);
     if (modo == E_LASER) { tiras.setPixelColor(led, colorLaser(pos, lado, mostrado[lado], t)); continue; }
     float f = constrain(mostrado[lado] - pos, 0.0f, 1.0f);                         // el LED del borde a medias
+    if (pulso) f *= 0.3f + 0.7f * envolventePulso();                             // late con el pulso
     uint32_t c = colorModo(pos, lado, t);
-    tiras.setPixelColor(led, escalar(c, f));
+    tiras.setPixelColor(led, millis() - tDestello[lado] < 160 ? colorDestello[lado] : escalar(c, f));
   }
 }
 
@@ -140,16 +158,20 @@ void dibujarEspectro(int izq, int der) {
 
 // ---------- Animaciones de la OLED (rojo + azul cambia entre ellas) ----------
 enum { A_CUBO, A_ESTRELLAS, A_COHETE, A_PLANETA, A_INFINITO, A_RADAR, A_ASTEROIDES, A_GALAXIA,
-       A_ESPECTRO, A_TUNEL, A_ONDA, A_OCTAEDRO, N_ANIM };
+       A_AGUJERO, A_FUGACES, A_TIERRA, A_ESPECTRO, A_TUNEL, A_ONDA, A_OCTAEDRO, N_ANIM };
 const char *NOMBRE_ANIM[N_ANIM] = {"CUBO 3D", "HIPERESPACIO", "COHETE", "PLANETA", "AL INFINITO", "RADAR",
-                                   "ASTEROIDES", "GALAXIA", "ESPECTRO", "TUNEL", "ONDA", "OCTAEDRO"};
+                                   "ASTEROIDES", "GALAXIA", "AGUJERO NEGRO", "FUGACES", "TIERRA",
+                                   "ESPECTRO", "TUNEL", "ONDA", "OCTAEDRO"};
+char avisoTxt[22] = "";
+unsigned long tAviso = 0;
+void aviso(const char *txt) { strncpy(avisoTxt, txt, sizeof avisoTxt - 1); tAviso = millis(); }
 int anim = A_CUBO;
-bool pantallaPrueba = false;
-unsigned long tCambioAnim = 0;
+bool pantallaPrueba = false, exhibicion = false;
+unsigned long tExhibicion = 0;
 float angX = 0, angY = 0, angZ = 0;
 
 float graves() {                                       // energía de graves del audio (0..1); 0 si no llega audio
-  if (millis() - tEspectro > 400) return 0;
+  if (millis() - tEspectro > 400) return envolventePulso() * 0.8f;   // sin audio: late con el pulso a golpes
   return (espectro[0] + espectro[1] + espectro[2] + espectro[3]) / (4 * 255.0f);
 }
 
@@ -394,6 +416,209 @@ void dibujarGalaxia(int izq, int der, float g) {         // espiral de dos brazo
   estrellasFondo(0);
 }
 
+void dibujarAgujero(int izq, int der, float g) {         // partículas que caen en espiral · izq = velocidad · der = tamaño
+  static float p[44][2];                                 // radio, ángulo
+  static bool listo = false;
+  if (!listo) { for (auto &q : p) { q[0] = random(6, 70); q[1] = random(628) / 100.0f; } listo = true; }
+  float vel = 0.15f + izq * 0.01f + g;
+  float esc = 0.6f + der * 0.006f;
+  for (auto &q : p) {
+    q[1] += 2.2f / q[0];
+    q[0] -= vel * (1 + 12 / q[0]);
+    if (q[0] < 4) { q[0] = random(50, 75); q[1] = random(628) / 100.0f; }
+    oled.drawPixel(64 + q[0] * esc * cosf(q[1]), 32 + q[0] * esc * 0.5f * sinf(q[1]));
+  }
+  oled.drawEllipse(64, 32, 16 * esc, 4 * esc);           // disco de acreción
+  oled.setDrawColor(0); oled.drawDisc(64, 32, 5 * esc + 1); oled.setDrawColor(1);
+  oled.drawCircle(64, 32, 5 * esc + 2);
+}
+
+void dibujarFugaces(int izq, int der, float g) {         // constelación que se va uniendo + estrellas fugaces
+  static const uint8_t c[8][2] = {{14, 40}, {30, 28}, {46, 33}, {62, 20}, {80, 26}, {96, 14}, {104, 34}, {88, 46}};
+  static float f[3][3];                                  // x, y, vida
+  estrellasFondo(0);
+  int n = (millis() / (900 - izq * 7)) % 10;             // cuántos tramos están dibujados
+  for (int i = 0; i < 8; i++) oled.drawDisc(c[i][0], c[i][1], i < n + 1 ? 2 : 1);
+  for (int i = 0; i < min(n, 7); i++) oled.drawLine(c[i][0], c[i][1], c[i + 1][0], c[i + 1][1]);
+  for (auto &e : f) {
+    if (e[2] <= 0) { if (random(100) < 2 + der / 10 + g * 20) { e[0] = random(20, 128); e[1] = random(0, 20); e[2] = 18; } continue; }
+    e[0] -= 4; e[1] += 2; e[2]--;
+    oled.drawLine(e[0], e[1], e[0] + 10, e[1] - 5);
+    oled.drawDisc(e[0], e[1], 1);
+  }
+}
+
+void dibujarTierra(int izq, int der, float g) {          // globo que gira con un satélite en órbita
+  static float giro = 0, orb = 0;
+  giro += 0.02f + izq * 0.0006f;
+  orb += 0.03f + der * 0.0008f;
+  estrellasFondo(0);
+  int r = 15 + g * 3;
+  int sx = 64 + 36 * cosf(orb), sy = 33 + 11 * sinf(orb) - 6 * cosf(orb);
+  bool delante = sinf(orb) > 0;
+  auto satelite = [&]() {
+    oled.setDrawColor(0); oled.drawBox(sx - 2, sy - 2, 5, 5); oled.setDrawColor(1);
+    oled.drawFrame(sx - 1, sy - 1, 3, 3);
+    oled.drawHLine(sx - 7, sy, 5); oled.drawHLine(sx + 3, sy, 5);
+    oled.drawFrame(sx - 8, sy - 2, 3, 5); oled.drawFrame(sx + 6, sy - 2, 3, 5);
+  };
+  if (!delante) satelite();
+  oled.setDrawColor(0); oled.drawDisc(64, 33, r); oled.setDrawColor(1);
+  oled.drawCircle(64, 33, r);
+  for (int k = 0; k < 4; k++) {                          // meridianos que giran
+    float a = giro + k * PI / 4;
+    int rx = fabsf(r * cosf(a));
+    if (rx > 1) oled.drawEllipse(64, 33, rx, r, cosf(a) > 0 ? U8G2_DRAW_UPPER_RIGHT | U8G2_DRAW_LOWER_RIGHT : U8G2_DRAW_UPPER_LEFT | U8G2_DRAW_LOWER_LEFT);
+  }
+  oled.drawHLine(64 - r, 33, 2 * r);
+  oled.drawEllipse(64, 33, r, r / 3, U8G2_DRAW_LOWER_LEFT | U8G2_DRAW_LOWER_RIGHT);
+  if (delante) satelite();
+  oled.drawDisc(112, 10, 4); oled.setDrawColor(0); oled.drawDisc(114, 9, 3); oled.setDrawColor(1);   // luna creciente
+}
+
+// ---------- Juegos (rojo + amarillo abre el menú; rojo + amarillo de nuevo sale) ----------
+enum { J_NADA = -1, J_MENU, J_PONG, J_SIMON, J_LUNA };
+const char *NOMBRE_JUEGO[3] = {"PONG", "SIMON DICE", "ALUNIZAJE"};
+int juego = J_NADA, menuSel = 0;
+
+// Pong: el deslizante izquierdo mueve la paleta izquierda (variable der) y el derecho la derecha (variable izq)
+const int PALETA = 14;
+float bx, by, vx, vy;
+int puntos[2];
+bool pongFin = false;
+void pongSaque() { bx = 64; by = 32; vx = random(2) ? 1.7f : -1.7f; vy = random(-12, 13) / 10.0f; }
+void pongIniciar() { puntos[0] = puntos[1] = 0; pongFin = false; pongSaque(); }
+void dibujarPong(int izq, int der) {
+  int yi = (100 - der) * (64 - PALETA) / 100, yd = (100 - izq) * (64 - PALETA) / 100;
+  if (!pongFin) {
+    bx += vx; by += vy;
+    if (by < 1 || by > 62) { vy = -vy; by = constrain(by, 1.0f, 62.0f); }
+    if (vx < 0 && bx <= 5 && bx >= 1 && by >= yi - 2 && by <= yi + PALETA + 2) { vx = fabsf(vx) * 1.07f; vy += (by - (yi + PALETA / 2)) * 0.12f; }
+    if (vx > 0 && bx >= 122 && bx <= 126 && by >= yd - 2 && by <= yd + PALETA + 2) { vx = -fabsf(vx) * 1.07f; vy += (by - (yd + PALETA / 2)) * 0.12f; }
+    vx = constrain(vx, -4.5f, 4.5f); vy = constrain(vy, -3.0f, 3.0f);
+    if (bx < -2) { puntos[1]++; destello(0, 0x00FF60); pongSaque(); }    // anota el de la derecha: se iluminan sus luces
+    if (bx > 129) { puntos[0]++; destello(1, 0x00FF60); pongSaque(); }
+    if (puntos[0] == 5 || puntos[1] == 5) pongFin = true;
+  }
+  for (int y = 0; y < 64; y += 6) oled.drawVLine(64, y, 3);
+  oled.drawBox(1, yi, 3, PALETA); oled.drawBox(124, yd, 3, PALETA);
+  oled.drawBox(bx - 1, by - 1, 3, 3);
+  oled.setFont(u8g2_font_6x12_tf);
+  char t[8]; snprintf(t, sizeof t, "%d  %d", puntos[0], puntos[1]);
+  oled.drawStr(64 - 3 * strlen(t), 10, t);
+  if (pongFin) {
+    oled.setDrawColor(0); oled.drawBox(14, 22, 100, 24); oled.setDrawColor(1); oled.drawFrame(14, 22, 100, 24);
+    oled.drawStr(20, 33, puntos[0] == 5 ? "GANA IZQUIERDA" : "GANA DERECHA");
+    oled.drawStr(26, 43, "boton = otra");
+  }
+}
+
+// Simón dice: la caja muestra colores en las luces y se repiten con los botones
+const uint32_t COLOR_SIMON[4] = {0xFF0000, 0x0040FF, 0xFFFFFF, 0xFFB000};
+uint8_t secuencia[40];
+int nivel = 1, idxSimon = 0, faseSimon = 0, luzSimon = -1;       // fase 0 muestra, 1 espera, 2 perdió
+unsigned long tSimon = 0, tLuzBoton = 0;
+void simonIniciar() { for (auto &x : secuencia) x = random(4); nivel = 1; faseSimon = 0; tSimon = millis() + 600; }
+void simonBoton(int i) {
+  if (faseSimon == 2) { if (millis() - tSimon > 800) simonIniciar(); return; }
+  if (faseSimon != 1) return;
+  luzSimon = i; tLuzBoton = millis();
+  if (i != secuencia[idxSimon]) { faseSimon = 2; tSimon = millis(); return; }
+  if (++idxSimon == nivel) { nivel = min(nivel + 1, 40); faseSimon = 0; tSimon = millis() + 700; }
+}
+void dibujarSimon() {
+  oled.setFont(u8g2_font_6x12_tf);
+  oled.drawStr(0, 10, "SIMON DICE");
+  char t[12]; snprintf(t, sizeof t, "NIVEL %d", nivel);
+  oled.drawStr(128 - 6 * strlen(t), 10, t);
+  if (faseSimon == 0) {
+    long dt = (long)(millis() - tSimon);
+    int k = dt < 0 ? -1 : dt / 600;
+    luzSimon = (dt >= 0 && k < nivel && dt % 600 < 420) ? secuencia[k] : -1;
+    if (dt >= 0 && k >= nivel) { faseSimon = 1; idxSimon = 0; luzSimon = -1; }
+    oled.setFont(u8g2_font_logisoso16_tr);
+    oled.drawStr(4, 44, luzSimon >= 0 ? NOMBRE_BOTON[luzSimon] : "MIRA...");
+  } else if (faseSimon == 1) {
+    if (millis() - tLuzBoton > 250) luzSimon = -1;
+    oled.setFont(u8g2_font_logisoso16_tr);
+    oled.drawStr(4, 44, "TU TURNO");
+    for (int i = 0; i < nivel && i < 21; i++) (i < idxSimon ? oled.drawDisc(4 + i * 6, 58, 2) : oled.drawCircle(4 + i * 6, 58, 2));
+  } else {
+    luzSimon = (millis() / 200) % 2 ? 0 : -1;
+    oled.setFont(u8g2_font_logisoso16_tr);
+    oled.drawStr(4, 40, "PERDISTE");
+    oled.setFont(u8g2_font_6x12_tf);
+    snprintf(t, sizeof t, "llegaste a %d", nivel - 1);
+    oled.drawStr(4, 58, t);
+  }
+}
+
+// Alunizaje: el deslizante derecho es el motor (variable izq) y el izquierdo inclina la nave (variable der)
+float lx, ly, lvx, lvy, combustible;
+int estadoLuna = 0, plataforma;                          // 0 volando, 1 alunizó, 2 chocó
+uint8_t suelo[9];
+void lunaIniciar() {
+  lx = random(20, 108); ly = 4; lvx = random(-5, 6) / 10.0f; lvy = 0; combustible = 100; estadoLuna = 0;
+  for (auto &h : suelo) h = random(48, 61);
+  plataforma = random(1, 7); suelo[plataforma + 1] = suelo[plataforma];
+}
+int alturaSuelo(float x) { int k = constrain((int)(x / 16), 0, 7); float u = (x - k * 16) / 16; return suelo[k] + (suelo[k + 1] - suelo[k]) * u; }
+void dibujarLuna(int izq, int der) {
+  float motor = combustible > 0 ? izq / 100.0f : 0;
+  if (estadoLuna == 0) {
+    lvy += 0.03f - motor * 0.075f;
+    lvx += ((der - 50) / 60.0f - lvx) * 0.04f;
+    combustible = max(0.0f, combustible - motor * 0.45f);
+    lx = constrain(lx + lvx, 4.0f, 124.0f); ly += lvy;
+    if (ly + 4 >= alturaSuelo(lx)) {
+      bool enPlataforma = lx >= plataforma * 16 + 3 && lx <= (plataforma + 1) * 16 - 3;
+      estadoLuna = enPlataforma && lvy < 0.8f && fabsf(lvx) < 0.6f ? 1 : 2;
+      destello(0, estadoLuna == 1 ? 0x00FF60 : 0xFF0000); destello(1, estadoLuna == 1 ? 0x00FF60 : 0xFF0000);
+      ly = alturaSuelo(lx) - 4;
+    }
+  }
+  for (int k = 0; k < 8; k++) oled.drawLine(k * 16, suelo[k], k * 16 + 16, suelo[k + 1]);
+  oled.drawBox(plataforma * 16 + 2, suelo[plataforma] - 1, 12, 2);
+  int x = lx, y = ly;
+  oled.drawTriangle(x - 3, y + 1, x + 3, y + 1, x, y - 5);
+  oled.drawLine(x - 3, y + 1, x - 5, y + 4); oled.drawLine(x + 3, y + 1, x + 5, y + 4);
+  if (motor > 0.05f && estadoLuna == 0) oled.drawTriangle(x - 2, y + 2, x + 2, y + 2, x, y + 3 + motor * 6 + random(3));
+  oled.setFont(u8g2_font_5x7_tf);
+  oled.drawFrame(0, 0, 42, 6); oled.drawBox(1, 1, combustible * 0.4f, 4);
+  char t[16]; snprintf(t, sizeof t, "V %.1f", lvy);
+  oled.drawStr(90, 6, t);
+  if (estadoLuna) {
+    oled.setFont(u8g2_font_6x12_tf);
+    oled.setDrawColor(0); oled.drawBox(18, 16, 92, 24); oled.setDrawColor(1); oled.drawFrame(18, 16, 92, 24);
+    oled.drawStr(24, 27, estadoLuna == 1 ? "ALUNIZASTE!" : "TE ESTRELLASTE");
+    oled.drawStr(30, 37, "boton = otra");
+  }
+}
+
+void dibujarMenuJuegos() {
+  oled.setFont(u8g2_font_6x12_tf);
+  oled.drawStr(0, 10, "JUEGOS");
+  for (int i = 0; i < 3; i++) {
+    if (i == menuSel) { oled.drawBox(0, 15 + i * 13, 128, 12); oled.setDrawColor(0); }
+    oled.drawStr(6, 25 + i * 13, NOMBRE_JUEGO[i]);
+    oled.setDrawColor(1);
+  }
+  oled.setFont(u8g2_font_5x7_tf);
+  oled.drawStr(0, 63, "blanco elige  amarillo juega");
+}
+void juegoBoton(int i) {                                  // botón suelto dentro de los juegos
+  if (juego == J_MENU) {
+    if (i == 2 || i == 1) menuSel = (menuSel + 1) % 3;
+    if (i == 0) menuSel = (menuSel + 2) % 3;
+    if (i == 3) {
+      juego = J_PONG + menuSel;
+      if (juego == J_PONG) pongIniciar(); else if (juego == J_SIMON) simonIniciar(); else lunaIniciar();
+    }
+  } else if (juego == J_PONG) { if (pongFin) pongIniciar(); }
+  else if (juego == J_SIMON) simonBoton(i);
+  else if (juego == J_LUNA) { if (estadoLuna) lunaIniciar(); }
+}
+
 void dibujarPrueba(int izq, int der, int apretado) {
   oled.setFont(u8g2_font_6x12_tf);
   oled.drawStr(0, 10, "CTRL-04L prueba");
@@ -407,7 +632,11 @@ void dibujarPrueba(int izq, int der, int apretado) {
 
 void dibujarPantalla(int izq, int der, int apretado) {
   oled.clearBuffer();
-  if (pantallaPrueba) dibujarPrueba(izq, der, apretado);
+  if (juego == J_MENU) dibujarMenuJuegos();
+  else if (juego == J_PONG) dibujarPong(izq, der);
+  else if (juego == J_SIMON) dibujarSimon();
+  else if (juego == J_LUNA) dibujarLuna(izq, der);
+  else if (pantallaPrueba) dibujarPrueba(izq, der, apretado);
   else {
     float g = graves();
     switch (anim) {
@@ -423,16 +652,55 @@ void dibujarPantalla(int izq, int der, int apretado) {
       case A_RADAR:     dibujarRadar(izq, der, g); break;
       case A_ASTEROIDES:dibujarAsteroides(izq, der, g); break;
       case A_GALAXIA:   dibujarGalaxia(izq, der, g); break;
-    }
-    if (millis() - tCambioAnim < 1500) {                 // nombre de la animación al cambiarla
-      oled.setFont(u8g2_font_6x12_tf);
-      int w = 6 * strlen(NOMBRE_ANIM[anim]) + 6;
-      oled.setDrawColor(0); oled.drawBox(0, 0, w, 13); oled.setDrawColor(1);
-      oled.drawFrame(0, 0, w, 13);
-      oled.drawStr(3, 10, NOMBRE_ANIM[anim]);
+      case A_AGUJERO:   dibujarAgujero(izq, der, g); break;
+      case A_FUGACES:   dibujarFugaces(izq, der, g); break;
+      case A_TIERRA:    dibujarTierra(izq, der, g); break;
     }
   }
+  if (millis() - tAviso < 1500) {                        // aviso arriba a la izquierda (animación, brillo, etc.)
+    oled.setFont(u8g2_font_6x12_tf);
+    int w = 6 * strlen(avisoTxt) + 6;
+    oled.setDrawColor(0); oled.drawBox(0, 0, w, 13); oled.setDrawColor(1);
+    oled.drawFrame(0, 0, w, 13);
+    oled.drawStr(3, 10, avisoTxt);
+  }
   oled.sendBuffer();
+}
+
+void galon(int cx, int cy, int a) {                       // galón de Star Command (chevron)
+  oled.drawTriangle(cx - a, cy - a / 2, cx, cy + a / 2, cx, cy + a / 2 - 5);
+  oled.drawTriangle(cx - a, cy - a / 2, cx - a, cy - a / 2 + 6, cx, cy + a / 2);
+  oled.drawTriangle(cx + a, cy - a / 2, cx, cy + a / 2, cx, cy + a / 2 - 5);
+  oled.drawTriangle(cx + a, cy - a / 2, cx + a, cy - a / 2 + 6, cx, cy + a / 2);
+}
+void arranque() {
+  randomSeed(analogRead(A0) ^ micros());
+  for (int f = 0; f < 22; f++) {                         // el galón aparece creciendo
+    oled.clearBuffer(); galon(64, 24, min(f * 2, 26));
+    oled.setFont(u8g2_font_6x12_tf);
+    if (f > 12) oled.drawStr(28, 60, "STAR COMMAND");
+    oled.sendBuffer(); delay(35);
+  }
+  delay(500);
+  for (int n = 3; n >= 1; n--) {                         // 3, 2, 1 con las luces subiendo
+    for (int k = 0; k < 2 * LEDS_POR_TIRA; k++) tiras.setPixelColor(k, (k % LEDS_POR_TIRA) < 4 - n ? 0x00FF60 : 0);
+    tiras.show();
+    oled.clearBuffer(); oled.setFont(u8g2_font_logisoso32_tn);
+    char t[2] = {(char)('0' + n), 0}; oled.drawStr(56, 48, t);
+    oled.sendBuffer(); delay(450);
+  }
+  for (int y = 70; y > -30; y -= 3) {                    // despegue
+    for (int k = 0; k < 2 * LEDS_POR_TIRA; k++) tiras.setPixelColor(k, random(2) ? 0xFF6000 : 0xFFD000);
+    tiras.show();
+    oled.clearBuffer(); estrellasFondo(3);
+    oled.drawBox(61, y - 6, 7, 15); oled.drawTriangle(61, y - 6, 67, y - 6, 64, y - 14);
+    oled.drawTriangle(61, y + 2, 61, y + 9, 56, y + 10); oled.drawTriangle(67, y + 2, 67, y + 9, 72, y + 10);
+    oled.drawTriangle(61, y + 9, 67, y + 9, 64, y + 18 + random(5));
+    oled.setFont(u8g2_font_6x12_tf); oled.drawStr(36, 63, "DESPEGUE!");
+    oled.sendBuffer(); delay(20);
+  }
+  tiras.clear(); tiras.show();
+  aviso(NOMBRE_ANIM[anim]);
 }
 
 void setup() {
@@ -442,8 +710,9 @@ void setup() {
   oled.setBusClock(400000);                         // I2C rápido: animaciones fluidas
   oled.begin();
   tiras.begin();
-  tiras.setBrightness(BRILLO);
+  tiras.setBrightness(BRILLOS[0]);
   tiras.show();
+  arranque();
 }
 
 void loop() {
@@ -463,19 +732,58 @@ void loop() {
     if (flanco[i]) tFlanco[i] = millis();
     antes[i] = ahora[i];
   }
-  if ((flanco[2] && ahora[3]) || (flanco[3] && ahora[2])) {        // amarillo + blanco = pantalla de prueba
-    pantallaPrueba = !pantallaPrueba;
-    if (flanco[3] && !flanco[2]) modo = (modo + N_MODOS - 1) % N_MODOS;   // el blanco ya había cambiado el modo: se deshace
-  } else if (flanco[2]) modo = (modo + 1) % N_MODOS;                // blanco solo = siguiente modo de luces
-  if ((flanco[0] && ahora[1]) || (flanco[1] && ahora[0])) {         // rojo + azul = siguiente animación
-    anim = (anim + 1) % N_ANIM;
-    tCambioAnim = millis();
-    pantallaPrueba = false;
+  static int modoPrevio = 0;
+  static unsigned long tBlanco = 0, tRB = 0, golpes[4] = {0, 0, 0, 0};
+  int combo = 0;                                                      // máscara de los dos botones de la combinación
+  if (ahora[0] && ahora[1] && ahora[2] && ahora[3]) {
+    if (flanco[0] || flanco[1] || flanco[2] || flanco[3]) {           // los 4 juntos = reinicio
+      if (millis() - tBlanco < 600) modo = modoPrevio;
+      modo = 0; anim = 0; brilloSel = 0; tiras.setBrightness(BRILLOS[0]); pulso = false; exhibicion = false;
+      juego = J_NADA; pantallaPrueba = false; aviso("REINICIO");
+    }
+  } else
+    for (int i = 0; i < 4 && !combo; i++)
+      if (flanco[i]) for (int j = 0; j < 4; j++) if (j != i && ahora[j]) { combo = (1 << i) | (1 << j); break; }
+
+  if (combo) {
+    if ((combo & 4) && millis() - tBlanco < 600 && juego == J_NADA) modo = modoPrevio;   // deshace el blanco suelto
+    if (combo == 0b1001) {                                            // rojo + amarillo = juegos
+      juego = juego == J_NADA ? J_MENU : J_NADA;
+      aviso(juego == J_NADA ? "FIN DEL JUEGO" : "JUEGOS");
+    } else if (juego == J_NADA) {
+      if (combo == 0b0011) { anim = (anim + 1) % N_ANIM; pantallaPrueba = false; aviso(NOMBRE_ANIM[anim]); }   // rojo + azul
+      if (combo == 0b1100) pantallaPrueba = !pantallaPrueba;                                                  // amarillo + blanco
+      if (combo == 0b1010) { exhibicion = !exhibicion; tExhibicion = millis(); aviso(exhibicion ? "EXHIBICION ON" : "EXHIBICION OFF"); }
+      if (combo == 0b0110) { brilloSel = (brilloSel + 1) % 3; tiras.setBrightness(BRILLOS[brilloSel]); aviso(NOMBRE_BRILLO[brilloSel]); }
+      if (combo == 0b0101) {                                          // rojo + blanco = un golpe del pulso
+        tRB = millis();
+        for (int k = 3; k > 0; k--) golpes[k] = golpes[k - 1];
+        golpes[0] = millis();
+        if (golpes[1] && golpes[0] - golpes[1] < 1500) {
+          unsigned long suma = 0; int n = 0;
+          for (int k = 0; k < 3 && golpes[k + 1] && golpes[k] - golpes[k + 1] < 1500; k++) { suma += golpes[k] - golpes[k + 1]; n++; }
+          periodoPulso = suma / n; tPulso = millis(); pulso = true;
+          char t[22]; snprintf(t, sizeof t, "PULSO %d BPM", (int)(60000 / periodoPulso)); aviso(t);
+        }
+      }
+    }
+  } else
+    for (int i = 0; i < 4; i++) {
+      if (!flanco[i]) continue;
+      if (juego != J_NADA) juegoBoton(i);
+      else if (i == 2) { modoPrevio = modo; modo = (modo + 1) % N_MODOS; tBlanco = millis(); }   // blanco solo = luces
+    }
+  if (pulso && ahora[0] && ahora[2] && tRB && millis() - tRB > 1500) { pulso = false; tRB = 0; aviso("PULSO OFF"); }   // mantener rojo + blanco
+  if (!(ahora[0] && ahora[2])) tRB = 0;
+  if (exhibicion && juego == J_NADA && !pantallaPrueba && millis() - tExhibicion > 10000) {   // exhibición: cambia sola
+    anim = (anim + 1) % N_ANIM; tExhibicion = millis(); aviso(NOMBRE_ANIM[anim]);
   }
 
   unsigned long t = millis();
   pintarTira(0, izq, IZQ_INVERTIDA, t);
   pintarTira(1, der, DER_INVERTIDA, t);
+  if (juego == J_SIMON)                                    // en Simón las luces muestran el color que toca
+    for (int k = 0; k < 2 * LEDS_POR_TIRA; k++) tiras.setPixelColor(k, luzSimon >= 0 ? COLOR_SIMON[luzSimon] : 0);
   tiras.show();
 
   leerSerial();
@@ -486,9 +794,10 @@ void loop() {
     ultimo = millis();
     int b[4];
     for (int i = 0; i < 4; i++) b[i] = digitalRead(PIN_BOTON[i]) == LOW;
-    Serial.printf("{\"izq\":%d,\"der\":%d,\"mv\":[%d,%d],\"bot\":[%d,%d,%d,%d],\"modo\":\"%s\",\"anim\":\"%s\"}\n",
+    Serial.printf("{\"izq\":%d,\"der\":%d,\"mv\":[%d,%d],\"bot\":[%d,%d,%d,%d],\"modo\":\"%s\",\"anim\":\"%s\",\"jg\":\"%s\"}\n",
                   izq, der, mvCrudo[0], mvCrudo[1], b[0], b[1], b[2], b[3], NOMBRE_MODO[modo],
-                  pantallaPrueba ? "PRUEBA" : NOMBRE_ANIM[anim]);
+                  pantallaPrueba ? "PRUEBA" : NOMBRE_ANIM[anim],
+                  juego == J_NADA ? "" : juego == J_MENU ? "MENU" : NOMBRE_JUEGO[juego - J_PONG]);
   }
   delay(15);
 }

@@ -33,8 +33,21 @@ Controlador MIDI-style de escritorio: dos faders deslizantes, cuatro pulsadores,
 | Fader derecho | continuo (0–100 %) | llena su tira de luz lateral | velocidad de la canción (0,5x–2x) |
 | Botón blanco | discreto | cambia el color/efecto de las luces | cambia el **banco** de funciones |
 | Rojo · azul · amarillo | discreto | — | función según el banco activo |
-| Amarillo + blanco | combinación | pantalla de prueba on/off | — |
 | Rojo + azul | combinación | siguiente animación de la OLED | — |
+| Amarillo + blanco | combinación | pantalla de prueba on/off | — |
+| Rojo + amarillo | combinación | menú de **juegos** (y salir) | los botones quedan para el juego |
+| Azul + amarillo | combinación | modo exhibición (cambia de animación cada 10 s) | — |
+| Azul + blanco | combinación | brillo de las luces (normal / bajo / alto) | — |
+| Rojo + blanco | combinación | pulso a golpes: tocarlo al ritmo fija el pulso; mantener 1,5 s lo apaga | — |
+| Los 4 juntos | combinación | reinicio | — |
+
+**Juegos** (rojo + amarillo abre el menú; blanco elige, amarillo empieza):
+
+- **Pong** para dos jugadores: cada fader mueve una paleta; gana el primero en llegar a 5 y se iluminan las luces del lado que anota.
+- **Simón dice:** la caja muestra una secuencia de colores en las luces y hay que repetirla con los cuatro botones de color, cada vez más larga.
+- **Alunizaje:** el fader derecho es el motor y el izquierdo inclina la nave; hay que posarse suave sobre la plataforma antes de quedar sin combustible.
+
+Al encender, la caja muestra el galón de Star Command, una cuenta regresiva 3, 2, 1 con las luces subiendo y un cohete que despega.
 
 **Bancos de funciones** (el color de las luces indica el banco):
 
@@ -48,7 +61,7 @@ Controlador MIDI-style de escritorio: dos faders deslizantes, cuatro pulsadores,
 
 Los colores siguientes repiten los bancos en el mismo orden.
 
-**Animaciones de la OLED** (rojo + azul): cubo 3D, hiperespacio, cohete, planeta con anillo y luna, «al infinito y más allá» (cometa sobre el símbolo ∞), radar del comunicador de muñeca, asteroides (la nave dispara sola), galaxia espiral, espectro del audio, túnel, onda y octaedro 3D. Los faders controlan velocidad y tamaño; cuando suena música, laten con los graves que manda el dashboard.
+**Animaciones de la OLED** (rojo + azul): cubo 3D, hiperespacio, cohete, planeta con anillo y luna, «al infinito y más allá» (cometa sobre el símbolo ∞), radar del comunicador de muñeca, asteroides (la nave dispara sola), galaxia espiral, agujero negro, estrellas fugaces con constelación, la Tierra con un satélite, espectro del audio, túnel, onda y octaedro 3D. Los faders controlan velocidad y tamaño; cuando suena música, laten con los graves que manda el dashboard.
 
 **Modos de luz** (botón blanco): verde, rojo, azul, cian, morado, amarillo, naranjo, rosado, blanco, vúmetro, arcoíris, respira, fuego y láser (disparos que suben hasta la posición del fader). El nivel se desliza con inercia y el LED del borde se enciende a medias, para un fundido suave.
 
