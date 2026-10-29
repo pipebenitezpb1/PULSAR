@@ -1,7 +1,7 @@
 """Genera el manual a partir de MANUAL.md (Edge headless), en blanco y negro y como cuadernillo de hoja partida:
 - docs/manual_CTRL-04L.pdf: páginas A5 en orden de lectura (para pantalla).
-- docs/manual_CTRL-04L_cuadernillo.pdf: las mismas páginas impuestas de a dos en hojas A4 apaisadas. Se imprime
-  a doble cara, volteando por el borde CORTO, al 100 %; se dobla por la mitad y queda el cuadernillo.
+- docs/manual_CTRL-04L_cuadernillo.pdf: las mismas páginas impuestas de a dos en hojas A4 VERTICALES (giradas 90°),
+  para que funcione la doble cara normal de cualquier impresora (borde largo), al 100 %; se dobla por la mitad.
 La tarjeta rápida queda siempre en la contratapa."""
 import asyncio, json
 from pathlib import Path
@@ -91,13 +91,16 @@ def imponer(origen, destino):
     n, ancho, alto = len(pags), 841.89, 595.28
     w = PdfWriter()
     for h in range(n // 4):
-        for izq, der in ((pags[n - 1 - 2 * h], pags[2 * h]), (pags[2 * h + 1], pags[n - 2 - 2 * h])):   # frente y dorso
+        for cara, (izq, der) in enumerate(((pags[n - 1 - 2 * h], pags[2 * h]), (pags[2 * h + 1], pags[n - 2 - 2 * h]))):   # frente y dorso
             hoja = PageObject.create_blank_page(width=ancho, height=alto)
             for pag, x in ((izq, 0), (der, ancho / 2)):
                 if pag is not None:
                     dx = x + (ancho / 2 - float(pag.mediabox.width)) / 2
                     hoja.merge_transformed_page(pag, Transformation().translate(tx=dx, ty=0))
-            w.add_page(hoja)
+            vertical = PageObject.create_blank_page(width=alto, height=ancho)   # A4 vertical: la doble cara normal
+            giro = Transformation().rotate(90).translate(tx=alto, ty=0) if cara == 0 else                    Transformation().rotate(-90).translate(tx=0, ty=ancho)       # el dorso va girado al otro lado
+            vertical.merge_transformed_page(hoja, giro)
+            w.add_page(vertical)
     w.write(str(destino))
     print(f"{n} páginas A5 → {n // 4} hojas A4 a doble cara ({n // 2} caras)")
 
