@@ -206,7 +206,7 @@ Para usarlo: abrir `dashboard/index.html` en Chrome o Edge → **Conectar** → 
 | ![Impresión](docs/fotos/13_impresion_base.jpg) **13.** Impresión 3D de la base. | ![Corte láser](docs/fotos/14_corte_laser_acrilico.jpg) **14.** Corte láser de la cubierta de acrílico. |
 | ![Cableado](docs/fotos/15_cableado_y_alargador.jpg) **15.** Cableado del shield con el alargador USB-C. | ![Shield en base](docs/fotos/16_shield_en_base.jpg) **16.** Shield dentro de la base impresa. |
 | ![XIAO](docs/fotos/17_xiao_detalle.jpg) **17.** Detalle de la XIAO y las conexiones. | ![Soldaduras](docs/fotos/18_soldaduras_reverso.jpg) **18.** Reverso de la placa: soldaduras y puentes. |
-| ![Visor OLED](docs/fotos/19_visor_oled_pantalla_prueba.jpg) **19.** Visor con la OLED mostrando la pantalla de prueba. | |
+| ![Visor OLED](docs/fotos/19_visor_oled_pantalla_prueba.jpg) **19.** Visor con la OLED mostrando la pantalla de prueba. | ![Piezas](docs/fotos/20_piezas_iteraciones.jpg) **20.** Piezas de dos iteraciones: bases impresas, marcos con visor, cubierta de acrílico, plantilla en MDF y marcos de los faders. |
 
 ---
 
