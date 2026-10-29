@@ -53,7 +53,7 @@ Controlador MIDI-style de escritorio: dos faders deslizantes, cuatro pulsadores,
 - **Simón dice:** la caja muestra una secuencia de colores en las luces y hay que repetirla con los cuatro botones de color, cada vez más larga.
 - **Alunizaje:** el fader derecho es el motor y el izquierdo inclina la nave; hay que posarse suave sobre la plataforma antes de quedar sin combustible.
 
-Al encender, la caja muestra el galón con el nombre PULSAR, una cuenta regresiva 3, 2, 1 con las luces subiendo y un cohete que despega.
+Al enchufarla queda apagada hasta que se aprieta cualquier botón; entonces muestra el galón con el nombre PULSAR, una cuenta regresiva 3, 2, 1 con las luces subiendo y un cohete que despega.
 
 **Bancos de funciones** (el color de las luces indica el banco):
 

@@ -729,6 +729,15 @@ void galon(int cx, int cy, int a) {                       // galón de PULSAR (c
   oled.drawTriangle(cx + a, cy - a / 2, cx, cy + a / 2, cx, cy + a / 2 - 5);
   oled.drawTriangle(cx + a, cy - a / 2, cx + a, cy - a / 2 + 6, cx, cy + a / 2);
 }
+void esperarBoton() {                                     // al enchufarla queda apagada hasta que se aprieta un botón
+  oled.setPowerSave(1);
+  tiras.clear(); tiras.show();
+  auto alguno = []() { for (int i = 0; i < 4; i++) if (digitalRead(PIN_BOTON[i]) == LOW) return true; return false; };
+  while (!alguno()) delay(20);
+  oled.setPowerSave(0);
+  while (alguno()) delay(20);                            // el botón que la despierta no hace nada más
+}
+
 void arranque() {
   randomSeed(esp_random());                             // NO usar analogRead(A0): es el pin del botón blanco y le quita el pull-up
   for (int f = 0; f < 14; f++) {                         // el galón aparece creciendo
@@ -772,6 +781,7 @@ void setup() {
   tiras.show();
   memoria.begin("ctrl04l", false);
   recSimon = memoria.getInt("simon", 0); recAsteroides = memoria.getInt("ast", 0); recLuna = memoria.getInt("luna", 0);
+  esperarBoton();
   arranque();
 }
 

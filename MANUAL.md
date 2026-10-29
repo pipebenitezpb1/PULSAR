@@ -43,11 +43,12 @@ Arriba de cada fader hay una escala grabada en el acrílico. Abajo (hacia los bo
 ## 2. Encender
 
 1. Conecta un cable **USB-C con datos** al puerto trasero y al computador (o a un cargador, si solo vas a usar la caja sola).
-2. La caja arranca sola en unos 4 segundos:
+2. La caja queda **apagada** (pantalla y luces sin encender). **Aprieta cualquier botón** para encenderla; ese botón no hace nada más.
+3. Arranca en unos 4 segundos:
    - aparece el **galón** con el nombre **PULSAR**;
    - una cuenta regresiva **3 · 2 · 1** con las luces subiendo;
    - un **cohete despega** y las luces parpadean como fuego.
-3. Queda en la animación **Cubo 3D** con las luces en **verde**.
+4. Queda en la animación **Cubo 3D** con las luces en **verde**.
 
 > No necesita drivers ni instalación. Para apagarla, desconecta el cable.
 
@@ -257,6 +258,7 @@ Con una canción sonando, la página le manda el espectro a la caja 25 veces por
 
 | Problema | Solución |
 |---|---|
+| Al enchufarla no pasa nada | Es normal: queda apagada hasta que aprietas **cualquier botón**. |
 | La página dice "Este navegador no tiene Web Serial" | Usa Chrome o Edge. En iPhone/iPad no es posible. |
 | No aparece el puerto al apretar Conectar | Revisa que el cable USB-C sea **de datos** (los de solo carga no sirven). Prueba otro puerto del computador. |
 | "El puerto está ocupado" | Hay otra pestaña o programa conectado a la caja. Ciérralo y vuelve a conectar. |
