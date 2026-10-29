@@ -7,7 +7,7 @@ Controlador MIDI-style de escritorio: dos faders deslizantes, cuatro pulsadores,
 
 ![CTRL-04L de frente](docs/renders/vistaL_frente.png)
 
-> 📘 **[Manual de uso](MANUAL.md)**: cómo usar cada control, las combinaciones, los juegos y el sintetizador web.
+> 📘 **[Manual de uso](MANUAL.md)**: cómo usar cada control, las combinaciones, los juegos y el sintetizador web. También en [PDF para imprimir](docs/manual_CTRL-04L.pdf).
 >
 > **Video de demostración:** _(pendiente: pegar aquí el enlace de YouTube)_
 
