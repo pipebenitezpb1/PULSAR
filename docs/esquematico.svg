@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" font-family="Space Mono, Consolas, monospace" font-size="13">
+  <!-- Esquemático del shield CTRL-04L (conexiones por etiqueta de red: mismo nombre = mismo cable) -->
+  <rect width="1200" height="820" fill="#f1ebdc"/>
+  <rect x="8" y="8" width="1184" height="804" fill="none" stroke="#1b1a13" stroke-width="2"/>
+  <text x="28" y="44" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="28" font-weight="700" fill="#1b1a13">CTRL-04L · ESQUEMÁTICO DEL SHIELD</text>
+  <text x="28" y="66" fill="#6b6450">Placa perforada 7×9 cm · XIAO ESP32-C3 sobre headers hembra (desmontable) · redes con el mismo nombre están unidas</text>
+
+  <defs>
+    <g id="gnd"><line x1="0" y1="0" x2="0" y2="10" stroke="#1b1a13" stroke-width="2"/><line x1="-10" y1="10" x2="10" y2="10" stroke="#1b1a13" stroke-width="2"/><line x1="-6" y1="14" x2="6" y2="14" stroke="#1b1a13" stroke-width="2"/><line x1="-2" y1="18" x2="2" y2="18" stroke="#1b1a13" stroke-width="2"/></g>
+  </defs>
+
+  <!-- XIAO -->
+  <rect x="470" y="150" width="260" height="330" fill="#ded4bf" stroke="#1b1a13" stroke-width="2"/>
+  <text x="600" y="185" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="22" font-weight="700">XIAO ESP32-C3</text>
+  <text x="600" y="205" text-anchor="middle" fill="#6b6450">sobre headers hembra 2×7</text>
+  <g stroke="#1b1a13" stroke-width="2">
+    <line x1="420" y1="240" x2="470" y2="240"/><line x1="420" y1="275" x2="470" y2="275"/><line x1="420" y1="310" x2="470" y2="310"/>
+    <line x1="420" y1="345" x2="470" y2="345"/><line x1="420" y1="380" x2="470" y2="380"/><line x1="420" y1="415" x2="470" y2="415"/>
+    <line x1="420" y1="450" x2="470" y2="450"/>
+    <line x1="730" y1="240" x2="780" y2="240"/><line x1="730" y1="275" x2="780" y2="275"/><line x1="730" y1="310" x2="780" y2="310"/>
+    <line x1="730" y1="345" x2="780" y2="345"/><line x1="730" y1="450" x2="780" y2="450"/>
+  </g>
+  <g>
+    <text x="480" y="244">D0 · GPIO2</text><text x="480" y="279">D1 · A1</text><text x="480" y="314">D2 · A2</text>
+    <text x="480" y="349">D3 · GPIO5</text><text x="480" y="384">D4 · SDA</text><text x="480" y="419">D5 · SCL</text>
+    <text x="480" y="454">D6 · GPIO21</text>
+    <text x="720" y="244" text-anchor="end">5V</text><text x="720" y="279" text-anchor="end">GND</text><text x="720" y="314" text-anchor="end">3V3</text>
+    <text x="720" y="349" text-anchor="end">D10 · GPIO10</text><text x="720" y="384" text-anchor="end" fill="#6b6450">D9 (libre)</text>
+    <text x="720" y="419" text-anchor="end" fill="#6b6450">D8 (libre)</text><text x="720" y="454" text-anchor="end">D7 · GPIO20</text>
+  </g>
+  <g font-weight="700" fill="#1a7a2e">
+    <text x="414" y="244" text-anchor="end">BTN_BLANCO</text><text x="414" y="279" text-anchor="end">SLIDER_DER</text>
+    <text x="414" y="314" text-anchor="end">SLIDER_IZQ</text><text x="414" y="349" text-anchor="end">BTN_AZUL</text>
+    <text x="414" y="384" text-anchor="end">SDA</text><text x="414" y="419" text-anchor="end">SCL</text>
+    <text x="414" y="454" text-anchor="end">BTN_ROJO</text>
+    <text x="786" y="244">5V</text><text x="786" y="279">GND</text><text x="786" y="314">3V3</text>
+    <text x="786" y="349">LED_DATA</text><text x="786" y="454">BTN_AMARILLO</text>
+  </g>
+  <rect x="540" y="482" width="120" height="26" fill="#1b1a13"/>
+  <text x="600" y="500" text-anchor="middle" fill="#f1ebdc">USB-C</text>
+  <text x="600" y="530" text-anchor="middle" fill="#6b6450">→ alargador macho-hembra 26 mm → panel trasero</text>
+
+  <!-- Botones -->
+  <text x="40" y="580" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="20" font-weight="700">PULSADORES 12×12 (pull-up interno, activo en LOW)</text>
+  <g id="btn">
+  </g>
+  <g transform="translate(60,610)">
+    <text x="0" y="0" font-weight="700" fill="#1a7a2e">BTN_ROJO</text>
+    <text x="230" y="0" font-weight="700" fill="#1a7a2e">BTN_AZUL</text>
+    <text x="460" y="0" font-weight="700" fill="#1a7a2e">BTN_BLANCO</text>
+    <text x="690" y="0" font-weight="700" fill="#1a7a2e">BTN_AMARILLO</text>
+  </g>
+  <g stroke="#1b1a13" stroke-width="2" fill="none">
+    <!-- 4 pulsadores: red → contacto → GND -->
+    <path d="M90 620 V650 M70 650 H110 M75 640 H105 M90 650 V680"/>
+    <path d="M320 620 V650 M300 650 H340 M305 640 H335 M320 650 V680"/>
+    <path d="M550 620 V650 M530 650 H570 M535 640 H565 M550 650 V680"/>
+    <path d="M780 620 V650 M760 650 H800 M765 640 H795 M780 650 V680"/>
+  </g>
+  <use href="#gnd" x="90" y="680"/><use href="#gnd" x="320" y="680"/><use href="#gnd" x="550" y="680"/><use href="#gnd" x="780" y="680"/>
+  <g fill="#6b6450"><text x="120" y="660">D6</text><text x="350" y="660">D3</text><text x="580" y="660">D0</text><text x="810" y="660">D7</text></g>
+
+  <!-- Sliders -->
+  <text x="40" y="110" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="20" font-weight="700">DESLIZANTES B10K (60 mm)</text>
+  <g stroke="#1b1a13" stroke-width="2" fill="none">
+    <rect x="80" y="160" width="26" height="140" fill="#ded4bf"/>
+    <path d="M93 130 V160 M93 300 V330 M106 230 H150 M118 222 L106 230 L118 238"/>
+    <rect x="240" y="160" width="26" height="140" fill="#ded4bf"/>
+    <path d="M253 130 V160 M253 300 V330 M266 230 H310 M278 222 L266 230 L278 238"/>
+  </g>
+  <g font-weight="700" fill="#1a7a2e">
+    <text x="93" y="124" text-anchor="middle">GND</text><text x="93" y="348" text-anchor="middle">3V3</text><text x="112" y="220">SLIDER_IZQ</text>
+    <text x="253" y="124" text-anchor="middle">GND</text><text x="253" y="348" text-anchor="middle">3V3</text><text x="272" y="220">SLIDER_DER</text>
+  </g>
+  <text x="40" y="380" fill="#6b6450">3V3 en la punta de abajo:</text>
+  <text x="40" y="398" fill="#6b6450">el firmware invierte la lectura</text>
+
+  <!-- OLED -->
+  <text x="860" y="110" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="20" font-weight="700">OLED 0,96" SSD1306 (I2C 0x3C)</text>
+  <rect x="880" y="130" width="200" height="110" fill="#16150f" stroke="#1b1a13" stroke-width="2"/>
+  <rect x="900" y="145" width="160" height="60" fill="#0c63b3" opacity=".55"/>
+  <g fill="#f1ebdc"><text x="900" y="228">GND VDD SCK SDA</text></g>
+  <g font-weight="700" fill="#1a7a2e"><text x="880" y="262">GND · 3V3 · SCL · SDA</text></g>
+  <text x="880" y="282" fill="#6b6450">4 cables soldados, sin header</text>
+
+  <!-- NeoPixel -->
+  <text x="860" y="350" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="20" font-weight="700">TIRA WS2812B · 8 LED (4 por lado)</text>
+  <g stroke="#1b1a13" stroke-width="2" fill="none">
+    <path d="M880 400 H920"/>
+    <rect x="920" y="392" width="44" height="16" fill="#ded4bf"/>
+    <path d="M964 400 H1000"/>
+    <rect x="1000" y="380" width="160" height="40" fill="#16150f"/>
+  </g>
+  <g fill="#f5c518"><circle cx="1020" cy="400" r="6"/><circle cx="1045" cy="400" r="6"/><circle cx="1070" cy="400" r="6"/><circle cx="1095" cy="400" r="6"/><circle cx="1120" cy="400" r="6"/><circle cx="1140" cy="400" r="6"/></g>
+  <text x="942" y="430" text-anchor="middle">330 Ω</text>
+  <g font-weight="700" fill="#1a7a2e"><text x="874" y="404" text-anchor="end">LED_DATA</text><text x="1000" y="450">+5V · GND</text></g>
+  <text x="1000" y="470" fill="#6b6450">LED 0-3 siguen a A1</text>
+  <text x="1000" y="488" fill="#6b6450">LED 4-7 siguen a A2</text>
+
+  <text x="40" y="790" fill="#6b6450">Luis-Felipe Benitez · Taller de Interfaces UAI · 2026</text>
+</svg>

@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CTRL-04L Sintetizador</title>
+<!-- Dashboard en tiempo real del CTRL-04L (XIAO ESP32-C3) por Web Serial · Taller de Interfaces UAI · Luis-Felipe Benitez
+     El firmware manda cada 50 ms: {"izq":0-100,"der":0-100,"mv":[mV,mV],"bot":[r,a,b,y],"modo":"..."}; 'n' pide el siguiente modo. -->
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  /* Tokens de Insta3D (insta3d_web/ESTILO.md): papel, tinta, verde; bordes 2px, sombra dura, esquinas rectas */
+  :root {
+    --paper: #e7dfce; --paper-2: #ded4bf; --cream: #f1ebdc; --panel: #16150f; --ink: #1b1a13; --muted: #6b6450;
+    --accent: #1a7a2e; --accent-2: #15a01e; --alert: #d4500f;
+    --rojo: #d3302c; --azul: #1e6fd9; --blanco: #f2efe8; --amarillo: #f5c518;
+    --disp: 'Barlow Condensed', 'Arial Narrow', Impact, sans-serif; --sans: 'Barlow', system-ui, sans-serif; --mono: 'Space Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { overflow-x: hidden; max-width: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.45 var(--sans); }
+  body::after { content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .05; mix-blend-mode: multiply; z-index: 90;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  header { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between;
+           padding: 14px clamp(16px, 3vw, 40px); background: var(--paper-2); border-bottom: 2px solid var(--ink); }
+  h1 { margin: 0; font: 700 clamp(24px, 3vw, 36px)/1 var(--disp); text-transform: uppercase; letter-spacing: .02em; }
+  h1 b { color: var(--accent); }
+  h1 small { display: block; font: 400 11px/1.6 var(--mono); letter-spacing: .12em; color: var(--muted); }
+  .acciones { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  button { font: 600 16px/1 var(--disp); text-transform: uppercase; letter-spacing: .04em; border: 2px solid var(--ink); border-radius: 0;
+           background: var(--cream); color: var(--ink); padding: 10px 16px; cursor: pointer; box-shadow: 3px 3px 0 var(--ink); }
+  button:active { transform: translate(3px, 3px); box-shadow: none; }
+  button.lleno { background: var(--accent); color: var(--paper); }
+  button:disabled { opacity: .4; cursor: default; }
+  #estado { font: 12px var(--mono); color: var(--muted); padding: 4px 8px; border: 2px dashed var(--muted); }
+  #estado.ok { color: var(--accent); border-color: var(--accent); }
+  main { display: grid; gap: 20px; padding: 20px clamp(16px, 3vw, 40px) 36px;
+         grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); max-width: 1600px; margin: 0 auto; }
+  .panel { background: var(--cream); border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); padding: 18px; min-width: 0; }
+  .panel h2 { margin: -18px -18px 16px; padding: 8px 18px; font: 700 18px/1.2 var(--disp); text-transform: uppercase; letter-spacing: .04em;
+              border-bottom: 2px solid var(--ink); display: flex; justify-content: space-between; gap: 8px; }
+  .panel h2::after { content: attr(data-fig); font: 400 11px/1.8 var(--mono); color: var(--muted); }
+  .faders { display: flex; justify-content: space-around; gap: 16px; }
+  .fader { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .riel { position: relative; width: 46px; height: 240px; background: var(--panel); border: 2px solid var(--ink); overflow: hidden;
+          background-image: repeating-linear-gradient(to top, transparent 0 23px, #e7dfce22 23px 24px); }
+  .relleno { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: var(--accent); transition: height .06s linear; }
+  .perilla { position: absolute; left: -2px; right: -2px; height: 14px; bottom: 0; background: var(--paper); border: 2px solid var(--ink);
+             transform: translateY(50%); transition: bottom .06s linear; }
+  .valor { font: 700 34px/1 var(--mono); }
+  .mv { font: 11px var(--mono); color: var(--muted); letter-spacing: .04em; }
+  .botones { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; justify-items: center; }
+  .boton { width: min(104px, 28vw); aspect-ratio: 1; border-radius: 50%; border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
+           display: grid; place-items: center; filter: saturate(.25) brightness(1.05); opacity: .55; transition: transform .05s, box-shadow .05s; }
+  .boton.on { filter: none; opacity: 1; transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
+  .boton span { font: 700 15px var(--disp); letter-spacing: .06em; }
+  .cuenta { text-align: center; font: 11px var(--mono); color: var(--muted); margin-top: 8px; }
+  .tiras { display: flex; justify-content: center; gap: 40px; }
+  .tira { display: flex; flex-direction: column-reverse; gap: 8px; padding: 10px; background: var(--panel); border: 2px solid var(--ink); }
+  .led { width: 30px; height: 30px; background: #000; transition: background .06s; }
+  #modo { font: 700 clamp(30px, 3.4vw, 46px)/1 var(--disp); text-transform: uppercase; color: var(--accent); margin: 0 0 14px; }
+  canvas { width: 100%; height: 170px; display: block; background: var(--panel); border: 2px solid var(--ink); }
+  .leyenda { display: flex; gap: 16px; font: 11px var(--mono); color: var(--muted); margin-top: 10px; flex-wrap: wrap; }
+  .leyenda i { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--ink); margin-right: 6px; vertical-align: -2px; }
+  #log { height: 170px; overflow: auto; margin: 0; padding: 10px; background: var(--panel); color: #9fd8a8; border: 2px solid var(--ink);
+         font: 11px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .audio { display: grid; gap: 0; }
+  .audio div { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--muted); padding: 8px 0; }
+  .audio span { color: var(--muted); }
+  .audio b { font: 700 14px var(--mono); color: var(--accent); }
+  .boton-archivo { font: 600 16px/1 var(--disp); text-transform: uppercase; letter-spacing: .04em; border: 2px solid var(--ink);
+                   background: var(--accent); color: var(--paper); padding: 10px 16px; cursor: pointer; box-shadow: 3px 3px 0 var(--ink); }
+  #banco { font: 700 26px/1.1 var(--disp); text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  #pista { font: 600 16px/1.3 var(--disp); text-transform: uppercase; overflow-wrap: anywhere; margin-bottom: 10px; }
+  #rapidas { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  #rapidas button { font-size: 13px; padding: 6px 10px; box-shadow: 2px 2px 0 var(--ink); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #rapidas button.quitar { padding: 6px 8px; background: var(--paper-2); }
+  #barra { height: 12px; background: var(--panel); border: 2px solid var(--ink); margin-bottom: 8px; cursor: pointer; }
+  #avance { height: 100%; width: 0; background: var(--accent); }
+  body.arrastrando main { outline: 4px dashed var(--accent); outline-offset: -8px; }
+  #onda { height: 56px; margin: 12px 0 10px; }
+  #mic { width: 100%; }
+  #mic.lleno { background: var(--alert); }
+  footer { text-align: center; font: 11px var(--mono); color: var(--muted); padding: 0 16px 28px; letter-spacing: .08em; }
+  @media (min-width: 1100px) { .ancho2 { grid-column: span 2; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>CTRL-04<b>L</b> · Sintetizador<small>INSTA3D · TALLER DE INTERFACES UAI · FIG. 04-L</small></h1>
+  <div class="acciones">
+    <span id="estado">Sin conexión</span>
+    <button id="conectar" class="lleno">Conectar</button>
+    <button id="demo">Modo demo</button>
+    <button id="siguiente" disabled>Siguiente modo</button>
+    <label class="boton-archivo" id="cargar">Cargar MP3<input type="file" id="archivo" accept="audio/*" hidden></label>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <h2 data-fig="FIG. 01">Faders (continuo)</h2>
+    <div class="faders">
+      <div class="fader"><div class="riel"><div class="relleno" id="rI"></div><div class="perilla" id="pI"></div></div>
+        <div class="valor" id="vI">0%</div><div class="mv" id="mI">— mV</div><div class="mv">IZQUIERDO · A2</div></div>
+      <div class="fader"><div class="riel"><div class="relleno" id="rD"></div><div class="perilla" id="pD"></div></div>
+        <div class="valor" id="vD">0%</div><div class="mv" id="mD">— mV</div><div class="mv">DERECHO · A1</div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 data-fig="FIG. 02">Botones (discreto)</h2>
+    <div class="botones">
+      <div><div class="boton" id="b0" style="background:var(--rojo)"><span style="color:#fff">ROJO</span></div><div class="cuenta" id="c0">—</div></div>
+      <div><div class="boton" id="b1" style="background:var(--azul)"><span style="color:#fff">AZUL</span></div><div class="cuenta" id="c1">—</div></div>
+      <div><div class="boton" id="b2" style="background:var(--blanco)"><span>BLANCO</span></div><div class="cuenta" id="c2">—</div></div>
+      <div><div class="boton" id="b3" style="background:var(--amarillo)"><span>AMARILLO</span></div><div class="cuenta" id="c3">—</div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 data-fig="FIG. 03">Luces laterales</h2>
+    <div id="modo">VERDE</div>
+    <div class="tiras"><div class="tira" id="tI"></div><div class="tira" id="tD"></div></div>
+    <div class="cuenta">El botón blanco cambia el modo (colores y efectos)</div>
+  </section>
+
+  <section class="panel">
+    <h2 data-fig="FIG. 04">Audio en vivo</h2>
+    <div id="banco">BANCO —</div>
+    <div id="pista">Arrastra un MP3 aquí o usa «Cargar MP3»</div>
+    <div id="barra"><div id="avance"></div></div>
+    <div id="rapidas"></div>
+    <div class="audio">
+      <div><span>Estado</span><b id="aEstado">sin pista</b></div>
+      <div><span>Frecuencia · fader izq.</span><b id="aFiltro">—</b></div>
+      <div><span>Velocidad · fader der.</span><b id="aVel">—</b></div>
+      <div><span>Filtro</span><b id="aEfecto">—</b></div>
+      <div><span>Eco · reverb</span><b id="aEco">no · no</b></div>
+      <div><span>Samples</span><b id="aSample">— · — · —</b></div>
+    </div>
+    <canvas id="onda"></canvas>
+    <button id="mic">Usar micrófono</button>
+    <div class="cuenta">El blanco cambia el color de las luces y con él el banco de funciones de los otros tres botones. Amarillo + blanco: pantalla de prueba · Rojo + azul: animación de la OLED</div>
+  </section>
+
+  <section class="panel ancho2">
+    <h2 data-fig="FIG. 05">Historial · últimos 10 s</h2>
+    <canvas id="graf"></canvas>
+    <div class="leyenda"><span><i style="background:#2ec24a"></i>Fader izquierdo</span><span><i style="background:#e7dfce"></i>Fader derecho</span><span><i style="background:var(--alert)"></i>Botones</span></div>
+  </section>
+
+  <section class="panel">
+    <h2 data-fig="FIG. 06">Datos seriales en bruto</h2>
+    <pre id="log"></pre>
+  </section>
+</main>
+<footer>HECHO EN CHILE · LUIS-FELIPE BENITEZ · XIAO ESP32-C3 · WEB SERIAL + WEB AUDIO</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const COLORES = {VERDE:"#00ff60", ROJO:"#ff0000", AZUL:"#0040ff", CIAN:"#00c8ff", MORADO:"#8a2be2", AMARILLO:"#ffb000",
+                 NARANJO:"#ff4000", ROSADO:"#ff3080", BLANCO:"#ffffff"};
+const MODOS = [...Object.keys(COLORES), "VUMETRO", "ARCOIRIS", "RESPIRA", "FUEGO", "LASER"];
+const LEDS = 4;
+let puerto = null, escritor = null, demo = null;
+let previo = [0, 0, 0, 0], cuentas = [0, 0, 0, 0];
+const historia = [];          // {t, izq, der, bot}
+
+for (const t of ["tI", "tD"]) for (let i = 0; i < LEDS; i++) $(t).appendChild(Object.assign(document.createElement("div"), {className: "led"}));
+
+function colorLed(modo, pos, lado, t) {
+  if (COLORES[modo]) return COLORES[modo];
+  if (modo === "VUMETRO") return `hsl(${120 - pos * 40},100%,50%)`;
+  if (modo === "ARCOIRIS") return `hsl(${(t / 9 + pos * 50 + lado * 180) % 360},100%,50%)`;
+  if (modo === "RESPIRA") return `hsl(176,100%,${20 + 30 * (0.5 + 0.5 * Math.sin(t / 600))}%)`;
+  if (modo === "FUEGO") return `hsl(${10 + Math.random() * 25},100%,${35 + Math.random() * 20}%)`;
+  return "#ff0010";
+}
+
+function pintarTira(id, nivel, modo, lado, t) {
+  const leds = $(id).children, alcance = nivel / 100 * LEDS;
+  for (let pos = 0; pos < LEDS; pos++) {
+    let f = Math.min(1, Math.max(0, alcance - pos)), c = colorLed(modo, pos, lado, t);
+    if (modo === "LASER") {                        // mismo disparo que el firmware
+      const ciclo = alcance + 2.5, h = ((t / 55 + lado * ciclo / 2) % ciclo) - 0.5, d = h - pos;
+      f = alcance < 0.25 || h > alcance ? 0 : (d > -1 && d < 0 ? 1 + d : d >= 0 ? Math.exp(-d * 1.6) : 0) * Math.min(1, Math.max(0, alcance - pos));
+    }
+    leds[pos].style.background = c;
+    leds[pos].style.opacity = f.toFixed(2);
+    leds[pos].style.boxShadow = f > 0.3 ? `0 0 ${14 * f}px ${c}` : "none";
+  }
+}
+
+const CRUZAR_FADERS = true;                          // A1 es el deslizante físico de la derecha y A2 el de la izquierda
+let ultimo = {izq: 0, der: 0, mv: [0, 0], bot: [0, 0, 0, 0], modo: "VERDE"}, luces = ultimo;
+function recibir(crudo) {
+  const d = CRUZAR_FADERS ? {...crudo, izq: crudo.der, der: crudo.izq, mv: [crudo.mv[1], crudo.mv[0]]} : crudo;
+  luces = d;                                         // cada tira sigue al deslizante que tiene al lado
+  ultimo = d;
+  for (const [lado, v, mv] of [["I", d.izq, d.mv[0]], ["D", d.der, d.mv[1]]]) {
+    $("r" + lado).style.height = v + "%"; $("p" + lado).style.bottom = v + "%";
+    $("v" + lado).textContent = v + "%"; $("m" + lado).textContent = mv + " mV";
+  }
+  d.bot.forEach((b, i) => {
+    $("b" + i).classList.toggle("on", !!b);
+  });
+  d.bot.forEach((b, i) => {
+    if (b && !previo[i]) pulsado(i, d.bot);
+    if (!b && previo[i]) soltado(i);
+  });
+  cambiarBanco(d.modo);
+  previo = d.bot;
+  audioFaders(d.izq, d.der);
+  $("modo").textContent = d.modo;
+  historia.push({t: performance.now(), izq: d.izq, der: d.der, bot: d.bot.some(Boolean)});
+}
+
+function animar(t) {                                // luces y gráfico a 60 fps
+  pintarTira("tI", luces.izq, luces.modo, 0, t);
+  pintarTira("tD", luces.der, luces.modo, 1, t);
+  const cv = $("graf"), w = cv.clientWidth, h = cv.clientHeight, ctx = cv.getContext("2d");
+  if (cv.width !== w * devicePixelRatio) { cv.width = w * devicePixelRatio; cv.height = h * devicePixelRatio; }
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0); ctx.clearRect(0, 0, w, h);
+  while (historia.length && historia[0].t < t - 10000) historia.shift();
+  const x = p => w - (t - p.t) / 10000 * w, y = v => h - 6 - v / 100 * (h - 12);
+  ctx.fillStyle = "#d4500f66";
+  for (const p of historia) if (p.bot) ctx.fillRect(x(p), 0, 3, h);
+  for (const [k, c] of [["izq", "#2ec24a"], ["der", "#e7dfce"]]) {
+    ctx.beginPath(); ctx.strokeStyle = c; ctx.lineWidth = 2.5;
+    historia.forEach((p, i) => i ? ctx.lineTo(x(p), y(p[k])) : ctx.moveTo(x(p), y(p[k]))); ctx.stroke();
+  }
+  requestAnimationFrame(animar);
+}
+requestAnimationFrame(animar);
+
+function registrar(linea) {
+  const log = $("log");
+  log.textContent = (log.textContent + linea + "\n").split("\n").slice(-60).join("\n");
+  log.scrollTop = log.scrollHeight;
+}
+
+async function conectar() {
+  if (!("serial" in navigator)) { $("estado").textContent = "Este navegador no tiene Web Serial: usa Chrome o Edge"; return; }
+  try {
+    puerto = await navigator.serial.requestPort();
+    await puerto.open({baudRate: 115200});
+  } catch (e) { $("estado").textContent = "No se conectó: " + e.message; return; }
+  pararDemo();
+  $("estado").textContent = "Conectado"; $("estado").className = "ok"; $("siguiente").disabled = false;
+  escritor = puerto.writable.getWriter();
+  const lector = puerto.readable.pipeThrough(new TextDecoderStream()).getReader();
+  let resto = "";
+  try {
+    while (true) {
+      const {value, done} = await lector.read();
+      if (done) break;
+      const partes = (resto + value).split("\n"); resto = partes.pop();
+      for (const l of partes) {
+        const linea = l.trim(); if (!linea) continue;
+        registrar(linea);
+        try { recibir(JSON.parse(linea)); } catch { /* línea incompleta al conectar */ }
+      }
+    }
+  } catch (e) { /* cable desconectado */ }
+  $("estado").textContent = "Desconectado"; $("estado").className = ""; $("siguiente").disabled = true;
+}
+
+function pararDemo() { clearInterval(demo); demo = null; $("demo").textContent = "Modo demo"; }
+$("demo").onclick = () => {
+  if (demo) return pararDemo();
+  $("demo").textContent = "Parar demo"; let k = 0;
+  demo = setInterval(() => {
+    k++; const s = k / 20;
+    const d = {izq: Math.round(50 + 50 * Math.sin(s)), der: Math.round(50 + 50 * Math.sin(s * 0.7 + 2)), mv: [0, 0],
+               bot: [0, 1, 2, 3].map(i => +(Math.floor(k / 12) % 8 === i * 2)), modo: MODOS[Math.floor(k / 80) % MODOS.length]};
+    d.mv = [Math.round(2830 - d.izq * 27.7), Math.round(2830 - d.der * 27.7)];
+    registrar(JSON.stringify(d)); recibir(d);
+  }, 50);
+};
+// ---------- Audio: un MP3 que el controlador va transformando en vivo (Web Audio) ----------
+// Fader izq. = frecuencia del filtro · fader der. = velocidad 0,5x–2x (como un tornamesa).
+// El blanco cambia el color de las luces (en la caja) y cada color es un BANCO: rojo, azul y amarillo cambian de función.
+// Combinaciones (amarillo+blanco, rojo+azul) las resuelve la caja; aquí se ignoran para que no disparen nada.
+const FILTROS = [
+  {nombre: "PASO BAJO", tipo: "lowpass",  min: 120, max: 19000, q: 6},
+  {nombre: "PASO ALTO", tipo: "highpass", min: 20,  max: 6000,  q: 4},
+  {nombre: "BANDA",     tipo: "bandpass", min: 250, max: 6000,  q: 1.2},
+];
+const SAMPLE_MAX = 8, TOQUE_MS = 300, COMBO_MS = 90;    // s máx. por sample · toque vs. grabación · ventana de combinación
+let ac = null, analizador, salida, filtro, entrada, ecoEnvio, eco, reverbEnvio, pistaFuente, grab, anillo, micFuente = null;
+let posAnillo = 0, totalGrab = 0, filtroSel = 0, conEco = false, conReverb = false, vel = 1, fFiltro = 0, frenando = false, banco = 0;
+const pads = [null, null, null], grabando = [0, 0, 0], inicioPad = [0, 0, 0];
+const reproductor = new Audio();
+reproductor.loop = true; reproductor.preservesPitch = false;           // más lento = más grave, como un vinilo
+
+function iniciarAudio() {
+  ac = new AudioContext();
+  salida = ac.createGain(); salida.gain.value = 0.8; salida.connect(ac.destination);
+  analizador = ac.createAnalyser(); analizador.fftSize = 512; analizador.smoothingTimeConstant = 0.6; salida.connect(analizador);
+  entrada = ac.createGain();                                            // todo lo que suena pasa por aquí → filtro
+  filtro = ac.createBiquadFilter(); entrada.connect(filtro); filtro.connect(salida);
+  pistaFuente = ac.createMediaElementSource(reproductor); pistaFuente.connect(entrada);
+  eco = ac.createDelay(1); eco.delayTime.value = 0.33;
+  const fb = ac.createGain(); fb.gain.value = 0.45; eco.connect(fb); fb.connect(eco); eco.connect(salida);
+  ecoEnvio = ac.createGain(); ecoEnvio.gain.value = 0; filtro.connect(ecoEnvio); ecoEnvio.connect(eco);
+  const sala = ac.createConvolver(), largo = ac.sampleRate * 2.6, ir = ac.createBuffer(2, largo, ac.sampleRate);
+  for (let c = 0; c < 2; c++) { const x = ir.getChannelData(c); for (let i = 0; i < largo; i++) x[i] = (Math.random() * 2 - 1) * (1 - i / largo) ** 3; }
+  sala.buffer = ir; sala.connect(salida);                               // reverb de sala, limpia
+  reverbEnvio = ac.createGain(); reverbEnvio.gain.value = 0; filtro.connect(reverbEnvio); reverbEnvio.connect(sala);
+  grab = ac.createGain(); pistaFuente.connect(grab);                    // al sampler entra la canción (sin efectos) y el mic
+  anillo = new Float32Array(ac.sampleRate * SAMPLE_MAX);                // memoria circular de los últimos 8 s
+  const proc = ac.createScriptProcessor(2048, 1, 1);
+  proc.onaudioprocess = e => {
+    const x = e.inputBuffer.getChannelData(0);
+    for (let i = 0; i < x.length; i++) { anillo[posAnillo] = x[i]; posAnillo = (posAnillo + 1) % anillo.length; }
+    totalGrab += x.length;
+  };
+  grab.connect(proc); proc.connect(ac.destination);                     // entrega silencio: solo escucha
+  setInterval(mandarEspectro, 40);
+  elegirFiltro(0);
+}
+function cargarPista(archivo, guardar = true) {
+  if (!archivo || !archivo.type.startsWith("audio")) return;
+  if (!ac) iniciarAudio();
+  ac.resume();
+  if (reproductor.src) URL.revokeObjectURL(reproductor.src);
+  reproductor.src = URL.createObjectURL(archivo);
+  if (guardar) guardarRapida(archivo);
+  reproductor.play();
+  $("pista").textContent = archivo.name.replace(/\.[^.]+$/, "");
+}
+function mandarEspectro() {                             // 16 bandas logarítmicas → la OLED del controlador
+  const f = new Uint8Array(analizador.frequencyBinCount);
+  analizador.getByteFrequencyData(f);
+  let hexs = "";
+  for (let i = 0; i < 16; i++) {
+    const a = Math.floor(2 * 1.32 ** i), b = Math.max(a + 1, Math.floor(2 * 1.32 ** (i + 1)));
+    let m = 0; for (let k = a; k < b && k < f.length; k++) m = Math.max(m, f[k]);
+    hexs += m.toString(16).padStart(2, "0");
+  }
+  if (!reproductor.paused) enviar("e" + hexs);
+}
+
+// --- acciones que usan los bancos ---
+function elegirFiltro(k) { filtroSel = k; const e = FILTROS[k]; filtro.type = e.tipo; filtro.Q.value = e.q; audioFaders(ultimo.izq, ultimo.der); }
+function alternarEco() { conEco = !conEco; ecoEnvio.gain.setTargetAtTime(conEco ? 0.5 : 0, ac.currentTime, 0.05); }
+function alternarReverb() { conReverb = !conReverb; reverbEnvio.gain.setTargetAtTime(conReverb ? 0.6 : 0, ac.currentTime, 0.1); }
+function playPausa() { if (reproductor.src) reproductor.paused ? reproductor.play() : reproductor.pause(); }
+function saltar(s) { if (reproductor.duration) reproductor.currentTime = Math.max(0, Math.min(reproductor.duration - 0.1, reproductor.currentTime + s)); }
+function padApretado(p) { grabando[p] = performance.now(); inicioPad[p] = totalGrab; }
+function padSoltado(p) {
+  const ms = performance.now() - grabando[p]; grabando[p] = 0;
+  if (ms < TOQUE_MS) return dispararPad(p);
+  const n = Math.min(totalGrab - inicioPad[p], anillo.length);
+  if (n < ac.sampleRate * 0.05) return;
+  const buf = ac.createBuffer(1, n, ac.sampleRate), x = buf.getChannelData(0), desde = (posAnillo - n + anillo.length) % anillo.length;
+  for (let i = 0; i < n; i++) x[i] = anillo[(desde + i) % anillo.length];
+  pads[p] = buf; dibujarOnda(buf);
+}
+function dispararPad(p) {
+  if (!pads[p]) return;
+  const f = ac.createBufferSource();
+  f.buffer = pads[p]; f.playbackRate.value = vel; f.connect(entrada); f.start();   // sigue velocidad, filtro, eco y reverb
+}
+let repetidor = null;
+function repetirInicio() { const t0 = reproductor.currentTime; repetidor = setInterval(() => reproductor.currentTime = t0, 190); }
+function repetirFin() { clearInterval(repetidor); repetidor = null; }
+let frenoTimer = null;
+function frenoInicio() {                                // freno de tornamesa: la canción se detiene bajando de tono
+  frenando = true; let r = vel;
+  frenoTimer = setInterval(() => { r = Math.max(0.07, r * 0.86); reproductor.playbackRate = r; }, 40);
+}
+function frenoFin() { clearInterval(frenoTimer); frenando = false; reproductor.playbackRate = vel; }
+function silencioInicio() { salida.gain.setTargetAtTime(0, ac.currentTime, 0.01); }
+function silencioFin() { salida.gain.setTargetAtTime(0.8, ac.currentTime, 0.01); }
+
+// Cada banco: [rojo, azul, amarillo] = {n: nombre, a: al apretar, s: al soltar}
+const BANCOS = [
+  {nombre: "REPRODUCTOR", f: [
+    {n: "Sample (mantener graba)", a: () => padApretado(0), s: () => padSoltado(0)},
+    {n: "Eco on/off", a: alternarEco},
+    {n: "Play / pausa", a: playPausa}]},
+  {nombre: "DJ", f: [
+    {n: "Volver al inicio", a: () => reproductor.currentTime = 0},
+    {n: "Repetir (mantener)", a: repetirInicio, s: repetirFin},
+    {n: "Freno (mantener)", a: frenoInicio, s: frenoFin}]},
+  {nombre: "FILTROS", f: [
+    {n: "Paso bajo", a: () => elegirFiltro(0)},
+    {n: "Paso alto", a: () => elegirFiltro(1)},
+    {n: "Banda", a: () => elegirFiltro(2)}]},
+  {nombre: "ESPACIO", f: [
+    {n: "Eco on/off", a: alternarEco},
+    {n: "Reverb on/off", a: alternarReverb},
+    {n: "Silencio (mantener)", a: silencioInicio, s: silencioFin}]},
+  {nombre: "SAMPLER", f: [
+    {n: "Pad 1 (mantener graba)", a: () => padApretado(0), s: () => padSoltado(0)},
+    {n: "Pad 2 (mantener graba)", a: () => padApretado(1), s: () => padSoltado(1)},
+    {n: "Pad 3 (mantener graba)", a: () => padApretado(2), s: () => padSoltado(2)}]},
+];
+const BOTON_FUNCION = {0: 0, 1: 1, 3: 2};             // rojo, azul, amarillo → posición en el banco
+const PAREJA = {0: 1, 1: 0, 2: 3, 3: 2};               // combinaciones que resuelve la caja
+const pendiente = {}, enCombo = {}, activo = {};
+
+function cambiarBanco(modo) {
+  const k = Math.max(0, MODOS.indexOf(modo)) % BANCOS.length;
+  if (k === banco && $("banco").dataset.listo) return;
+  // al cambiar de banco se sueltan las acciones mantenidas del banco anterior
+  for (const i in activo) { const f = BANCOS[banco].f[BOTON_FUNCION[i]]; if (f && f.s && ac) f.s(); delete activo[i]; }
+  banco = k; $("banco").dataset.listo = 1;
+  $("banco").textContent = "BANCO " + BANCOS[k].nombre;
+  $("c0").textContent = BANCOS[k].f[0].n; $("c1").textContent = BANCOS[k].f[1].n;
+  $("c2").textContent = "Cambia luces y banco"; $("c3").textContent = BANCOS[k].f[2].n;
+}
+function pulsado(i, bot) {
+  if (bot[PAREJA[i]]) {                                 // la pareja ya estaba apretada: es combinación
+    enCombo[i] = enCombo[PAREJA[i]] = true;
+    clearTimeout(pendiente[PAREJA[i]]); delete pendiente[PAREJA[i]];
+    return;
+  }
+  if (!(i in BOTON_FUNCION)) return;                    // el blanco no hace nada aquí (la caja cambia el modo)
+  pendiente[i] = setTimeout(() => {                     // se espera un poco por si llega la pareja
+    delete pendiente[i];
+    if (enCombo[i] || !ac) return;
+    const f = BANCOS[banco].f[BOTON_FUNCION[i]];
+    activo[i] = true; f.a(); mostrarAudio();
+  }, COMBO_MS);
+}
+function soltado(i) {
+  if (pendiente[i]) {                                   // se soltó antes de la ventana: se ejecuta como toque
+    clearTimeout(pendiente[i]); delete pendiente[i];
+    if (!enCombo[i] && ac && i in BOTON_FUNCION) { const f = BANCOS[banco].f[BOTON_FUNCION[i]]; f.a(); if (f.s) f.s(); }
+  } else if (activo[i]) { const f = BANCOS[banco].f[BOTON_FUNCION[i]]; if (f.s) f.s(); }
+  delete activo[i]; delete enCombo[i];
+  if (ac) mostrarAudio();
+}
+
+function dibujarOnda(buf) {
+  const cv = $("onda"), w = cv.clientWidth, h = cv.clientHeight, ctx = cv.getContext("2d");
+  cv.width = w * devicePixelRatio; cv.height = h * devicePixelRatio; ctx.scale(devicePixelRatio, devicePixelRatio);
+  ctx.clearRect(0, 0, w, h); ctx.fillStyle = "#2ec24a";
+  const x = buf.getChannelData(0), paso = Math.max(1, Math.floor(x.length / w));
+  for (let px = 0; px < w; px++) {
+    let m = 0; for (let k = px * paso; k < (px + 1) * paso && k < x.length; k++) m = Math.max(m, Math.abs(x[k]));
+    ctx.fillRect(px, h / 2 - m * h / 2, 1, Math.max(1, m * h));
+  }
+}
+$("mic").onclick = async () => {
+  if (!ac) iniciarAudio();
+  ac.resume();
+  if (micFuente) { micFuente.disconnect(); micFuente.mediaStream.getTracks().forEach(t => t.stop()); micFuente = null; }
+  else {
+    try { micFuente = ac.createMediaStreamSource(await navigator.mediaDevices.getUserMedia({audio: true})); micFuente.connect(grab); }
+    catch (e) { $("mic").textContent = "Sin permiso de micrófono"; return; }
+  }
+  $("mic").textContent = micFuente ? "Micrófono activo (no suena, solo se samplea)" : "Usar micrófono";
+  $("mic").classList.toggle("lleno", !!micFuente);
+};
+function audioFaders(izq, der) {
+  if (!ac) return;
+  const e = FILTROS[filtroSel];
+  fFiltro = e.min * (e.max / e.min) ** (izq / 100);
+  filtro.frequency.setTargetAtTime(fFiltro, ac.currentTime, 0.03);    // barrido exponencial
+  vel = 2 ** ((der - 50) / 50);                                         // 0,5x · 1x al medio · 2x
+  if (!frenando) reproductor.playbackRate = vel;
+  mostrarAudio();
+}
+function mostrarAudio() {
+  $("aEstado").textContent = !reproductor.src ? "sin pista" : reproductor.paused ? "en pausa" : "sonando";
+  $("aFiltro").textContent = Math.round(fFiltro) + " Hz";
+  $("aVel").textContent = vel.toFixed(2) + "x";
+  $("aEco").textContent = (conEco ? "sí" : "no") + " · " + (conReverb ? "sí" : "no");
+  $("aSample").textContent = pads.map((p, k) => grabando[k] && performance.now() - grabando[k] > TOQUE_MS ? "REC" : p ? p.duration.toFixed(1) + "s" : "—").join(" · ");
+  $("aEfecto").textContent = FILTROS[filtroSel].nombre;
+}
+setInterval(() => ac && mostrarAudio(), 200);
+reproductor.onplay = reproductor.onpause = () => ac && mostrarAudio();
+reproductor.ontimeupdate = () => $("avance").style.width = (reproductor.currentTime / reproductor.duration * 100 || 0) + "%";
+$("barra").onclick = e => { if (reproductor.duration) reproductor.currentTime = e.offsetX / $("barra").clientWidth * reproductor.duration; };
+$("archivo").onchange = e => cargarPista(e.target.files[0]);
+addEventListener("dragover", e => { e.preventDefault(); document.body.classList.add("arrastrando"); });
+addEventListener("dragleave", e => { if (!e.relatedTarget) document.body.classList.remove("arrastrando"); });
+addEventListener("drop", e => { e.preventDefault(); document.body.classList.remove("arrastrando"); cargarPista(e.dataTransfer.files[0]); });
+cambiarBanco("VERDE");
+
+// --- Selección rápida: las pistas cargadas quedan guardadas en ESTE navegador (IndexedDB), no en el servidor ---
+function abrirBD() {
+  return new Promise((ok, mal) => {
+    const r = indexedDB.open("ctrl04l", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("pistas");
+    r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error);
+  });
+}
+async function bdHacer(modo, fn) {
+  const bd = await abrirBD();
+  return new Promise((ok, mal) => { const t = bd.transaction("pistas", modo), r = fn(t.objectStore("pistas")); t.oncomplete = () => ok(r && r.result); t.onerror = () => mal(t.error); });
+}
+async function guardarRapida(archivo) {
+  try { await bdHacer("readwrite", st => st.put(archivo, archivo.name)); mostrarRapidas(); } catch (e) { /* sin almacenamiento: se ignora */ }
+}
+async function mostrarRapidas() {
+  let nombres = [];
+  try { nombres = await bdHacer("readonly", st => st.getAllKeys()); } catch (e) { return; }
+  const cont = $("rapidas"); cont.innerHTML = "";
+  try {                                                // pistas del servidor (sitio privado): pistas/lista.json
+    for (const p of await (await fetch("pistas/lista.json")).json()) {
+      const b = Object.assign(document.createElement("button"), {textContent: "★ " + p.nombre, title: p.archivo, className: "lleno"});
+      b.onclick = async () => {
+        b.textContent = "Cargando…";
+        const blob = await (await fetch(p.archivo)).blob();
+        b.textContent = "★ " + p.nombre;
+        cargarPista(new File([blob], p.nombre + ".mp3", {type: blob.type || "audio/mpeg"}), false);
+      };
+      cont.append(b);
+    }
+  } catch (e) { /* abierto como archivo local: no hay lista del servidor */ }
+  for (const n of nombres) {
+    const b = Object.assign(document.createElement("button"), {textContent: "▶ " + n.replace(/\.[^.]+$/, ""), title: n});
+    b.onclick = async () => { const f = await bdHacer("readonly", st => st.get(n)); if (f) cargarPista(f); };
+    const x = Object.assign(document.createElement("button"), {textContent: "×", className: "quitar", title: "Quitar de la selección rápida"});
+    x.onclick = async () => { await bdHacer("readwrite", st => st.delete(n)); mostrarRapidas(); };
+    cont.append(b, x);
+  }
+}
+mostrarRapidas();
+
+$("conectar").onclick = conectar;
+let ocupado = false;                                // una escritura serial a la vez
+function enviar(texto) {
+  if (!escritor || ocupado) return;
+  ocupado = true;
+  escritor.write(new TextEncoder().encode(texto + "\n")).catch(() => {}).finally(() => ocupado = false);
+}
+$("siguiente").onclick = () => enviar("n");
+</script>
+</body>
+</html>
