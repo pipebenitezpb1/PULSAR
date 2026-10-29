@@ -674,7 +674,7 @@ void galon(int cx, int cy, int a) {                       // galón de Star Comm
   oled.drawTriangle(cx + a, cy - a / 2, cx + a, cy - a / 2 + 6, cx, cy + a / 2);
 }
 void arranque() {
-  randomSeed(analogRead(A0) ^ micros());
+  randomSeed(esp_random());                             // NO usar analogRead(A0): es el pin del botón blanco y le quita el pull-up
   for (int f = 0; f < 22; f++) {                         // el galón aparece creciendo
     oled.clearBuffer(); galon(64, 24, min(f * 2, 26));
     oled.setFont(u8g2_font_6x12_tf);
