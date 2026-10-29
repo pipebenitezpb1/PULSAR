@@ -50,7 +50,9 @@ Arriba de cada fader hay una escala grabada en el acrílico. Abajo (hacia los bo
    - un **cohete despega** y las luces parpadean como fuego.
 4. Queda en la animación **Cubo 3D** con las luces en **verde**.
 
-> No necesita drivers ni instalación. Para apagarla, desconecta el cable.
+**Apagar:** mantén apretado **solo el botón blanco 5 segundos**. La pantalla avisa *APAGANDO EN 3, 2, 1*, se despide con *HASTA PRONTO* y queda dormida. Para volver a encenderla, aprieta cualquier botón. También puedes simplemente desconectar el cable.
+
+> No necesita drivers ni instalación.
 
 ---
 
@@ -123,6 +125,7 @@ Cada pulsación del **blanco** pasa al siguiente modo. Después del último vuel
 | **Amarillo + blanco** | pantalla de prueba (niveles de los faders, botón apretado y modo) |
 | **Los 4 juntos** | **reinicio**: todo vuelve a como parte |
 | **Los 4 juntos 3 segundos** | borra los récords de los juegos |
+| **Mantener blanco 5 segundos** | apagar (cualquier botón la vuelve a encender) |
 
 ---
 
@@ -318,3 +321,4 @@ pio run -t upload
 | **Rojo + blanco** | pulso a golpes (mantener = apagar) |
 | **Amarillo + blanco** | pantalla de prueba |
 | **Los 4** | reinicio |
+| **Blanco 5 s** | apagar · cualquier botón enciende |

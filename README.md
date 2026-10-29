@@ -46,6 +46,7 @@ Controlador MIDI-style de escritorio: dos faders deslizantes, cuatro pulsadores,
 | Azul + blanco | combinación | brillo de las luces (normal / bajo / alto) | — |
 | Rojo + blanco | combinación | pulso a golpes: tocarlo al ritmo fija el pulso; mantener 1,5 s lo apaga | — |
 | Los 4 juntos | combinación | reinicio | — |
+| Mantener blanco 5 s | — | apagar (cualquier botón la enciende) | — |
 
 **Juegos** (rojo + amarillo abre el menú; blanco elige, amarillo empieza):
 

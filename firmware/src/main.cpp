@@ -738,6 +738,17 @@ void esperarBoton() {                                     // al enchufarla queda
   while (alguno()) delay(20);                            // el botón que la despierta no hace nada más
 }
 
+void arranque();
+void apagar() {                                          // mantener el blanco 5 s: se despide y queda dormida
+  for (int k = 0; k < 2 * LEDS_POR_TIRA; k++) tiras.setPixelColor(k, 0);
+  tiras.show();
+  oled.clearBuffer(); oled.setFont(u8g2_font_6x12_tf); oled.drawStr(28, 36, "HASTA PRONTO"); oled.sendBuffer();
+  delay(900);
+  juego = J_NADA; pantallaPrueba = false;
+  esperarBoton();
+  arranque();
+}
+
 void arranque() {
   randomSeed(esp_random());                             // NO usar analogRead(A0): es el pin del botón blanco y le quita el pull-up
   for (int f = 0; f < 14; f++) {                         // el galón aparece creciendo
@@ -850,6 +861,19 @@ void loop() {
       memoria.clear(); recSimon = recAsteroides = recLuna = 0; aviso("RECORDS BORRADOS"); tCuatro = ~0UL;
     }
   } else tCuatro = 0;
+  static unsigned long tSoloBlanco = 0;                              // mantener SOLO el blanco 5 s = apagar
+  if (ahora[2] && !ahora[0] && !ahora[1] && !ahora[3]) {
+    if (!tSoloBlanco) tSoloBlanco = millis();
+    unsigned long d = millis() - tSoloBlanco;
+    if (d > 1500 && d < 5000) { char t[22]; snprintf(t, sizeof t, "APAGANDO EN %lu", (5000 - d) / 1000 + 1); aviso(t); }
+    if (d >= 5000) {
+      if (juego == J_NADA) modo = modoPrevio;                      // el blanco había cambiado el color: se deshace
+      tSoloBlanco = 0; tAviso = 0;
+      apagar();
+      for (int i = 0; i < 4; i++) antes[i] = false;
+      return;
+    }
+  } else tSoloBlanco = 0;
   if (pulso && ahora[0] && ahora[2] && tRB && millis() - tRB > 1500) { pulso = false; tRB = 0; aviso("PULSO OFF"); }   // mantener rojo + blanco
   if (!(ahora[0] && ahora[2])) tRB = 0;
   if (exhibicion && juego == J_NADA && !pantallaPrueba && millis() - tExhibicion > 10000) {   // exhibición: cambia sola
