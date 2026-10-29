@@ -48,7 +48,7 @@ Controlador MIDI-style de escritorio: dos faders deslizantes, cuatro pulsadores,
 
 Los colores siguientes repiten los bancos en el mismo orden.
 
-**Animaciones de la OLED** (rojo + azul): cubo 3D, hiperespacio, espectro del audio, túnel, onda y octaedro 3D. Los faders controlan velocidad y tamaño; cuando suena música, laten con los graves que manda el dashboard.
+**Animaciones de la OLED** (rojo + azul): cubo 3D, hiperespacio, cohete, planeta con anillo y luna, «al infinito y más allá» (cometa sobre el símbolo ∞), radar del comunicador de muñeca, asteroides (la nave dispara sola), galaxia espiral, espectro del audio, túnel, onda y octaedro 3D. Los faders controlan velocidad y tamaño; cuando suena música, laten con los graves que manda el dashboard.
 
 **Modos de luz** (botón blanco): verde, rojo, azul, cian, morado, amarillo, naranjo, rosado, blanco, vúmetro, arcoíris, respira, fuego y láser (disparos que suben hasta la posición del fader). El nivel se desliza con inercia y el LED del borde se enciende a medias, para un fundido suave.
 
