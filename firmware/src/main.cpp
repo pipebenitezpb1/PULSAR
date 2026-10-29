@@ -14,6 +14,7 @@
 #include <U8g2lib.h>
 #include <Adafruit_NeoPixel.h>
 #include <Preferences.h>
+#include "logo_pulsar.h"
 
 // Pines XIAO ESP32-C3 (A0/GPIO2 y A3/GPIO5 no sirven para los sliders: arranque y ADC2)
 const int PIN_SLIDER_IZQ = A1;   // GPIO3
@@ -730,11 +731,13 @@ void galon(int cx, int cy, int a) {                       // galón de PULSAR (c
 }
 void arranque() {
   randomSeed(esp_random());                             // NO usar analogRead(A0): es el pin del botón blanco y le quita el pull-up
-  for (int f = 0; f < 22; f++) {                         // el galón aparece creciendo
-    oled.clearBuffer(); galon(64, 24, min(f * 2, 26));
-    oled.setFont(u8g2_font_6x12_tf);
-    if (f > 12) oled.drawStr(46, 60, "PULSAR");
+  for (int f = 0; f < 14; f++) {                         // el galón aparece creciendo
+    oled.clearBuffer(); galon(64, 30, min(f * 2, 26));
     oled.sendBuffer(); delay(35);
+  }
+  for (int y = 64; y >= (64 - LOGO_H) / 2; y -= 3) {     // y sube el logo PULSAR
+    oled.clearBuffer(); oled.drawXBMP((128 - LOGO_W) / 2, y, LOGO_W, LOGO_H, LOGO_BITS);
+    oled.sendBuffer(); delay(20);
   }
   delay(500);
   for (int n = 3; n >= 1; n--) {                         // 3, 2, 1 con las luces subiendo

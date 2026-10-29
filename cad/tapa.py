@@ -5,6 +5,7 @@ from pathlib import Path
 from build123d import *
 import caja_laser as c
 from perillas_variantes import VARIANTES
+from logo import geometria_tapa
 
 OUT = Path(__file__).parent / "salida_laser"
 HOLGURA = 0.25                 # por lado: entra con roce suave (PLA/PETG; subir a 0,35 si queda dura)
@@ -40,10 +41,17 @@ def galon(ancho, y_punta, y_ala, grueso):
     a = ancho / 2
     return Polygon((0, y_punta), (a, y_ala), (a, y_ala + grueso), (0, y_punta + grueso * 1.4),
                    (-a, y_ala + grueso), (-a, y_ala), align=None)
-dibujo = Pos(cx, cy + 4) * (galon(58, -12, 4, 6) + galon(40, 2, 12, 4.5))
-dibujo += Pos(cx, cy - 26) * Text("PULSAR", font_size=12, font_style=FontStyle.BOLD)
-acento = tapa & extrude(Plane.XY.offset(zt - INLAY) * dibujo, INLAY + 1)
-tapa -= acento
+dibujo = Pos(cx, cy + 14) * (galon(46, -10, 3, 5) + galon(32, 1, 10, 3.6))
+relieves = [extrude(Plane.XY.offset(zt - INLAY) * dibujo, INLAY + 1)]
+relieves += [Pos(cx, cy - 16, zt - INLAY) * extrude(parte, INLAY + 1) for parte in geometria_tapa(9.0)]   # logo PULSAR
+relieves = [r.fix() for r in relieves]                   # el texto de la fuente trae contornos que OCCT debe reparar
+acento = Compound([tapa & r for r in relieves])          # cada relieve por separado: unir texto con otras piezas falla en OCCT
+for r in relieves:
+    try:
+        tapa -= r
+    except ValueError:                                    # si una letra no se deja restar, se resta letra por letra
+        for sol in r.solids():
+            tapa -= sol
 
 if __name__ == "__main__":
     obstaculos = c.cuerpo + c.acrilico + c.marco + c.funda

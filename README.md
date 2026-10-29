@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/renders/logo_pulsar.png" alt="PULSAR" width="520"></p>
+
 # PULSAR · Controlador físico
 
 _Modelo CTRL-04L_

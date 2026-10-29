@@ -43,6 +43,8 @@ HTML = """<!doctype html><html lang="es"><head><meta charset="utf-8">
   .portada h1 { font-size: 40pt; line-height: .9; margin: 10mm 0 3mm; }
   .portada .sub { font: 600 12pt 'Barlow Condensed', sans-serif; text-transform: uppercase; }
   .portada img { margin: 4mm auto 0; width: 100mm; }
+  .portada img.logo { width: 92mm; margin: 8mm 0 0; filter: grayscale(1) contrast(1.4); }
+  .portada h1 { font-size: 26pt !important; margin: 2mm 0 2mm !important; }
   .portada .indice { margin-top: auto; columns: 2; font-size: 8pt; border-top: 2pt solid #000; padding-top: 6pt; }
   .portada .indice div { break-inside: avoid; padding: 1.5pt 0; }
   .portada .pie { font: 7.5pt 'Space Mono', monospace; margin-top: 6pt; }
@@ -54,7 +56,7 @@ HTML = """<!doctype html><html lang="es"><head><meta charset="utf-8">
 </style></head><body>
 <div class="portada">
   <div class="marca">TALLER DE INTERFACES UAI · LUIS-FELIPE BENITEZ · 2026</div>
-  <h1>PULSAR<br>Manual de uso</h1>
+  <img class="logo" src="__LOGO__"><h1>Manual de uso</h1>
   <div class="sub">Controlador físico con pantalla, luces, juegos y sintetizador web</div>
   <img src="__IMAGEN__">
   <div class="indice" id="indice"></div>
@@ -107,6 +109,7 @@ def imponer(origen, destino):
 
 async def main():
     html = (HTML.replace("__FUENTES__", fuentes)
+                .replace("__LOGO__", (RAIZ / "docs" / "renders" / "logo_pulsar.png").as_uri())
                 .replace("__IMAGEN__", (RAIZ / "docs" / "renders" / "vistaL_frente.png").as_uri())
                 .replace("__MD__", json.dumps(md)))
     pagina = RAIZ / "docs" / "_manual.html"
