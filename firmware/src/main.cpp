@@ -1,4 +1,4 @@
-// CTRL-04L · prueba de hardware · Taller de Interfaces UAI · Luis-Felipe Benitez
+// PULSAR (modelo CTRL-04L) · Taller de Interfaces UAI · Luis-Felipe Benitez
 // Cada slider llena su mitad de la tira desde abajo, con fundido suave entre LED;
 // cada pulsación del botón blanco pasa al siguiente modo (colores fijos y efectos). La OLED muestra niveles y modo. El serial manda una línea JSON cada 50 ms (115200)
 // para el dashboard web: {"izq":0-100,"der":0-100,"mv":[mV,mV],"bot":[r,a,b,y],"modo":"..."}.
@@ -658,7 +658,7 @@ void juegoBoton(int i) {                                  // botón suelto dentr
 
 void dibujarPrueba(int izq, int der, int apretado) {
   oled.setFont(u8g2_font_6x12_tf);
-  oled.drawStr(0, 10, "CTRL-04L prueba");
+  oled.drawStr(0, 10, "PULSAR prueba");
   oled.drawFrame(0, 18, 128, 12);
   oled.drawBox(1, 19, izq * 126 / 100, 10);
   oled.drawFrame(0, 34, 128, 12);
@@ -722,7 +722,7 @@ void dibujarPantalla(int izq, int der, int apretado) {
   mandarEspejo();
 }
 
-void galon(int cx, int cy, int a) {                       // galón de Star Command (chevron)
+void galon(int cx, int cy, int a) {                       // galón de PULSAR (chevron)
   oled.drawTriangle(cx - a, cy - a / 2, cx, cy + a / 2, cx, cy + a / 2 - 5);
   oled.drawTriangle(cx - a, cy - a / 2, cx - a, cy - a / 2 + 6, cx, cy + a / 2);
   oled.drawTriangle(cx + a, cy - a / 2, cx, cy + a / 2, cx, cy + a / 2 - 5);
@@ -733,7 +733,7 @@ void arranque() {
   for (int f = 0; f < 22; f++) {                         // el galón aparece creciendo
     oled.clearBuffer(); galon(64, 24, min(f * 2, 26));
     oled.setFont(u8g2_font_6x12_tf);
-    if (f > 12) oled.drawStr(28, 60, "STAR COMMAND");
+    if (f > 12) oled.drawStr(46, 60, "PULSAR");
     oled.sendBuffer(); delay(35);
   }
   delay(500);

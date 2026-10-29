@@ -1,5 +1,5 @@
-# CTRL-04L · tapa protectora: encaja a presión sobre el marco + acrílico + borde de la caja y cubre visera y perillas.
-# Dos piezas para imprimir a dos colores (AMS): cuerpo + galón de Star Command y texto embutidos a ras (0,8 mm).
+# PULSAR · tapa protectora: encaja a presión sobre el marco + acrílico + borde de la caja y cubre visera y perillas.
+# Dos piezas para imprimir a dos colores (AMS): cuerpo + galón y el nombre PULSAR embutidos a ras (0,8 mm).
 # Se imprime boca abajo (la cara del galón sobre la cama): sin soportes.
 from pathlib import Path
 from build123d import *
@@ -34,14 +34,14 @@ tapa -= Pos(xu, c.D, z_falda - 1) * Box(22.0 + 2 * 0.6, 20, max(fb.max.Z, c.z_ac
 for x in (0, c.W):
     tapa -= Pos(x, cy, z_falda) * Rot(0, 90, 0) * Cylinder(9.0, 2 * (PARED + HOLGURA) + 4)
 
-# Galón de Star Command + nombre, embutidos en la cara superior
+# Galón + nombre PULSAR, embutidos en la cara superior
 zt = z_techo + TECHO
 def galon(ancho, y_punta, y_ala, grueso):
     a = ancho / 2
     return Polygon((0, y_punta), (a, y_ala), (a, y_ala + grueso), (0, y_punta + grueso * 1.4),
                    (-a, y_ala + grueso), (-a, y_ala), align=None)
 dibujo = Pos(cx, cy + 4) * (galon(58, -12, 4, 6) + galon(40, 2, 12, 4.5))
-dibujo += Pos(cx, cy - 26) * Text("CTRL-04L", font_size=9, font_style=FontStyle.BOLD)
+dibujo += Pos(cx, cy - 26) * Text("PULSAR", font_size=12, font_style=FontStyle.BOLD)
 acento = tapa & extrude(Plane.XY.offset(zt - INLAY) * dibujo, INLAY + 1)
 tapa -= acento
 

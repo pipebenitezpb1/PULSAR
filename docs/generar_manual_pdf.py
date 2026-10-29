@@ -1,6 +1,6 @@
 """Genera el manual a partir de MANUAL.md (Edge headless), en blanco y negro y como cuadernillo de hoja partida:
-- docs/manual_CTRL-04L.pdf: páginas A5 en orden de lectura (para pantalla).
-- docs/manual_CTRL-04L_cuadernillo.pdf: las mismas páginas impuestas de a dos en hojas A4 VERTICALES (giradas 90°),
+- docs/manual_PULSAR.pdf: páginas A5 en orden de lectura (para pantalla).
+- docs/manual_PULSAR_cuadernillo.pdf: las mismas páginas impuestas de a dos en hojas A4 VERTICALES (giradas 90°),
   para que funcione la doble cara normal de cualquier impresora (borde largo), al 100 %; se dobla por la mitad.
 La tarjeta rápida queda siempre en la contratapa."""
 import asyncio, json
@@ -54,11 +54,11 @@ HTML = """<!doctype html><html lang="es"><head><meta charset="utf-8">
 </style></head><body>
 <div class="portada">
   <div class="marca">TALLER DE INTERFACES UAI · LUIS-FELIPE BENITEZ · 2026</div>
-  <h1>CTRL-04L<br>Manual de uso</h1>
+  <h1>PULSAR<br>Manual de uso</h1>
   <div class="sub">Controlador físico con pantalla, luces, juegos y sintetizador web</div>
   <img src="__IMAGEN__">
   <div class="indice" id="indice"></div>
-  <div class="pie">github.com/pipebenitezpb1/CTRL-04L</div>
+  <div class="pie">Modelo CTRL-04L · github.com/pipebenitezpb1/PULSAR</div>
 </div>
 <main id="m"></main>
 <script>
@@ -117,13 +117,13 @@ async def main():
         await pg.goto(pagina.as_uri())
         await pg.wait_for_selector("body[data-ok='1']", timeout=60000)
         await pg.wait_for_timeout(500)
-        lectura = RAIZ / "docs" / "manual_CTRL-04L.pdf"
+        lectura = RAIZ / "docs" / "manual_PULSAR.pdf"
         await pg.pdf(path=str(lectura), format="A5", print_background=True,
                      display_header_footer=True, header_template="<span></span>",
                      footer_template='<div style="width:100%;font:7pt Arial;text-align:center;color:#000"><span class="pageNumber"></span></div>',
                      margin={"top": "11mm", "bottom": "13mm", "left": "11mm", "right": "11mm"})
         await b.close()
-    imponer(lectura, RAIZ / "docs" / "manual_CTRL-04L_cuadernillo.pdf")
+    imponer(lectura, RAIZ / "docs" / "manual_PULSAR_cuadernillo.pdf")
     pagina.unlink()
 
 asyncio.run(main())

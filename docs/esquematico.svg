@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" font-family="Space Mono, Consolas, monospace" font-size="13">
-  <!-- Esquemático del shield CTRL-04L (conexiones por etiqueta de red: mismo nombre = mismo cable) -->
+  <!-- Esquemático del shield PULSAR (CTRL-04L) (conexiones por etiqueta de red: mismo nombre = mismo cable) -->
   <rect width="1200" height="820" fill="#f1ebdc"/>
   <rect x="8" y="8" width="1184" height="804" fill="none" stroke="#1b1a13" stroke-width="2"/>
-  <text x="28" y="44" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="28" font-weight="700" fill="#1b1a13">CTRL-04L · ESQUEMÁTICO DEL SHIELD</text>
+  <text x="28" y="44" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="28" font-weight="700" fill="#1b1a13">PULSAR · ESQUEMÁTICO DEL SHIELD</text>
   <text x="28" y="66" fill="#6b6450">Placa perforada 7×9 cm · XIAO ESP32-C3 sobre headers hembra (desmontable) · redes con el mismo nombre están unidas</text>
 
   <defs>

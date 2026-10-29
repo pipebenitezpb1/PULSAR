@@ -1,13 +1,15 @@
-# CTRL-04L · Controlador físico
+# PULSAR · Controlador físico
+
+_Modelo CTRL-04L_
 
 **Entrega 1 · Unidad 2: Interfaces Físicas** · Taller de Interfaces, Universidad Adolfo Ibáñez · 2026
 Luis-Felipe Benitez
 
 Controlador MIDI-style de escritorio: dos faders deslizantes, cuatro pulsadores, una pantalla OLED inclinada hacia el usuario y luces laterales NeoPixel, construido sobre un shield soldado a medida para una **Seeed XIAO ESP32-C3**. Se conecta por USB a un **dashboard web** que muestra en tiempo real el estado de cada control y usa el controlador para transformar una canción en vivo (filtro, velocidad, eco, reverb y sampler).
 
-![CTRL-04L de frente](docs/renders/vistaL_frente.png)
+![PULSAR de frente](docs/renders/vistaL_frente.png)
 
-> 📘 **[Manual de uso](MANUAL.md)**: cómo usar cada control, las combinaciones, los juegos y el sintetizador web. También en [cuadernillo para imprimir](docs/manual_CTRL-04L_cuadernillo.pdf) (A4 a doble cara, volteando por el borde corto, doblado al medio) y en [PDF para pantalla](docs/manual_CTRL-04L.pdf).
+> 📘 **[Manual de uso](MANUAL.md)**: cómo usar cada control, las combinaciones, los juegos y el sintetizador web. También en [cuadernillo para imprimir](docs/manual_PULSAR_cuadernillo.pdf) (A4 a doble cara, doblado al medio) y en [PDF para pantalla](docs/manual_PULSAR.pdf).
 >
 > **Video de demostración:** _(pendiente: pegar aquí el enlace de YouTube)_
 
@@ -49,7 +51,7 @@ Controlador MIDI-style de escritorio: dos faders deslizantes, cuatro pulsadores,
 - **Simón dice:** la caja muestra una secuencia de colores en las luces y hay que repetirla con los cuatro botones de color, cada vez más larga.
 - **Alunizaje:** el fader derecho es el motor y el izquierdo inclina la nave; hay que posarse suave sobre la plataforma antes de quedar sin combustible.
 
-Al encender, la caja muestra el galón de Star Command, una cuenta regresiva 3, 2, 1 con las luces subiendo y un cohete que despega.
+Al encender, la caja muestra el galón con el nombre PULSAR, una cuenta regresiva 3, 2, 1 con las luces subiendo y un cohete que despega.
 
 **Bancos de funciones** (el color de las luces indica el banco):
 
@@ -138,7 +140,7 @@ Tres capas, atornilladas con 4 tornillos M3 × 12 en las esquinas:
 | `perilla_H_ala_*` | impresión 3D a 2 colores | perilla "ala", cuerpo + galón embutido (AMS) |
 | `CTRL-04L_acrilico_3mm` | corte láser | DXF/SVG: capa roja = corte, azul = grabado |
 
-**Identidad visual:** paleta verde limón + morado índigo con perillas inspiradas en Buzz Lightyear (alas del jetpack con el galón de Star Command).
+**Identidad visual:** **PULSAR**, una estrella que late con ritmo, como las luces, el pulso a golpes y el espectro del audio. Paleta verde limón + morado índigo, con perillas y animaciones inspiradas en la exploración espacial y en el imaginario de los juguetes espaciales (alas de jetpack, galones, cohetes).
 
 **Tapa protectora:** encaja a presión sobre el marco y cubre la visera y las perillas; tiene un paso para el USB-C trasero y muescas para el pulgar.
 
@@ -146,7 +148,7 @@ Tres capas, atornilladas con 4 tornillos M3 × 12 en las esquinas:
 
 | Paleta de colores | Perillas |
 |---|---|
-| ![Paleta](docs/renders/CTRL-04L_paleta_colores.png) | ![Perillas Buzz](docs/renders/buzz_vistas.png) |
+| ![Paleta](docs/renders/CTRL-04L_paleta_colores.png) | ![Perillas](docs/renders/buzz_vistas.png) |
 
 ---
 

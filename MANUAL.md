@@ -1,15 +1,15 @@
-# Manual de uso · CTRL-04L
+# Manual de uso · PULSAR
 
 **Controlador físico con pantalla, luces, juegos y sintetizador web.**
 Taller de Interfaces UAI · Luis-Felipe Benitez · 2026
 
-![CTRL-04L](docs/renders/vistaL_frente.png)
+![PULSAR](docs/renders/vistaL_frente.png)
 
 ---
 
 ## Índice
 
-1. [Conoce tu CTRL-04L](#1-conoce-tu-ctrl-04l)
+1. [Conoce tu PULSAR](#1-conoce-tu-pulsar)
 2. [Encender](#2-encender)
 3. [Controles básicos](#3-controles-básicos)
 4. [Luces laterales](#4-luces-laterales)
@@ -24,7 +24,7 @@ Taller de Interfaces UAI · Luis-Felipe Benitez · 2026
 
 ---
 
-## 1. Conoce tu CTRL-04L
+## 1. Conoce tu PULSAR
 
 | Parte | Dónde está | Para qué sirve |
 |---|---|---|
@@ -44,7 +44,7 @@ Arriba de cada fader hay una escala grabada en el acrílico. Abajo (hacia los bo
 
 1. Conecta un cable **USB-C con datos** al puerto trasero y al computador (o a un cargador, si solo vas a usar la caja sola).
 2. La caja arranca sola en unos 4 segundos:
-   - aparece el **galón de Star Command**;
+   - aparece el **galón** con el nombre **PULSAR**;
    - una cuenta regresiva **3 · 2 · 1** con las luces subiendo;
    - un **cohete despega** y las luces parpadean como fuego.
 3. Queda en la animación **Cubo 3D** con las luces en **verde**.
@@ -240,7 +240,7 @@ La página puede reenviar la caja como un **controlador MIDI** a programas de m�
 | Rojo · azul · blanco · amarillo | notas 36 · 37 · 38 · 39 (los primeros pads de un Drum Rack) |
 
 1. Crea un puerto MIDI virtual:
-   - **Windows:** instala **loopMIDI** y crea un puerto (por ejemplo "CTRL-04L").
+   - **Windows:** instala **loopMIDI** y crea un puerto (por ejemplo "PULSAR").
    - **Mac:** abre **Configuración de Audio MIDI → Estudio MIDI**, doble clic en **Bus IAC** y marca **El dispositivo está conectado**.
 2. En la página aprieta **Activar MIDI** y elige ese puerto en **Salida**.
 3. En tu programa, activa ese puerto como entrada MIDI. En Ableton, usa **MIDI Map** para asignar los faders a cualquier perilla.
