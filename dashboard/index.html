@@ -80,10 +80,10 @@
   #onda { height: 56px; margin: 12px 0 10px; }
   #mic { width: 100%; }
   #mic.lleno { background: var(--alert); }
-  #oled { width: 100%; aspect-ratio: 2; display: block; background: #05070d; border: 2px solid var(--ink); image-rendering: pixelated; }
+  #oled { width: 100%; height: auto; aspect-ratio: 2; max-width: 1024px; margin: 0 auto; display: block; background: #05070d; border: 2px solid var(--ink); image-rendering: pixelated; }
   #panelOled:fullscreen { background: #05070d; display: flex; flex-direction: column; justify-content: center; padding: 3vh 3vw; }
   #panelOled:fullscreen h2, #panelOled:fullscreen .fila-oled { display: none; }
-  #panelOled:fullscreen #oled { border: 0; max-height: 94vh; width: auto; margin: auto; }
+  #panelOled:fullscreen #oled { border: 0; width: min(94vw, 188vh); max-width: none; margin: auto; }
   .fila-oled { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-top: 12px; }
   #records { font: 12px var(--mono); color: var(--muted); }
   select { font: 13px var(--mono); border: 2px solid var(--ink); background: var(--cream); padding: 4px; max-width: 60%; }
