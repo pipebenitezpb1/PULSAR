@@ -196,6 +196,18 @@ Para usarlo: abrir `dashboard/index.html` en Chrome o Edge → **Conectar** → 
 | ![Shield en la caja](docs/fotos/03_shield_en_caja_alargador.jpg) **3.** Shield montado con el alargador USB-C. | ![USB-C hembra](docs/fotos/04_usb_c_hembra.jpg) **4.** Conector USB-C hembra con datos, sobre la tapa de acrílico. |
 | ![Alargador](docs/fotos/05_alargador_usb_c.jpg) **5.** Alargador USB-C macho-hembra armado. | ![Marco y OLED](docs/fotos/06_prueba_marco_oled.jpg) **6.** Prueba del marco con la OLED funcionando. |
 
+### Evolución del diseño
+
+| | |
+|---|---|
+| ![Primer prototipo](docs/fotos/07_primer_prototipo.jpg) **7.** Primer prototipo: faders y pulsadores presentados sobre la placa perforada. | ![OLED en placa](docs/fotos/08_prototipo_oled_en_placa.jpg) **8.** Primera distribución con la OLED sobre la placa. |
+| ![Maqueta MDF](docs/fotos/09_maqueta_mdf.jpg) **9.** Maqueta de la cubierta en MDF cortado con láser para validar medidas. | ![Maqueta MDF perfil](docs/fotos/10_maqueta_mdf_perfil.jpg) **10.** Perfil de la maqueta: altura de los pulsadores sobre la cubierta. |
+| ![Redistribución](docs/fotos/11_redistribucion_horizontal.jpg) **11.** Prueba de distribución horizontal con los marcos impresos de los faders. | ![Layout final](docs/fotos/12_layout_final_marcos_sliders.jpg) **12.** Distribución final: faders a los lados, botones al centro y la XIAO junto al borde trasero. |
+| ![Impresión](docs/fotos/13_impresion_base.jpg) **13.** Impresión 3D de la base. | ![Corte láser](docs/fotos/14_corte_laser_acrilico.jpg) **14.** Corte láser de la cubierta de acrílico. |
+| ![Cableado](docs/fotos/15_cableado_y_alargador.jpg) **15.** Cableado del shield con el alargador USB-C. | ![Shield en base](docs/fotos/16_shield_en_base.jpg) **16.** Shield dentro de la base impresa. |
+| ![XIAO](docs/fotos/17_xiao_detalle.jpg) **17.** Detalle de la XIAO y las conexiones. | ![Soldaduras](docs/fotos/18_soldaduras_reverso.jpg) **18.** Reverso de la placa: soldaduras y puentes. |
+| ![Visor OLED](docs/fotos/19_visor_oled_pantalla_prueba.jpg) **19.** Visor con la OLED mostrando la pantalla de prueba. | |
+
 ---
 
 ## Estructura del repositorio
