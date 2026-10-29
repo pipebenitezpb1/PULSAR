@@ -134,10 +134,15 @@ Tres capas, atornilladas con 4 tornillos M3 × 12 en las esquinas:
 | `CTRL-04L_5_lamina_difusora_x2` | impresión 3D | PETG/PLA blanco, 100 % relleno |
 | `CTRL-04L_7_funda_usb` | impresión 3D | funda del alargador USB-C, boca abajo |
 | `CTRL-04L_8_patas_tpu_x6` | impresión 3D | TPU (4 + 2 de repuesto) |
+| `CTRL-04L_9_tapa_*` | impresión 3D a 2 colores | tapa protectora a presión, boca abajo, galón embutido |
 | `perilla_H_ala_*` | impresión 3D a 2 colores | perilla "ala", cuerpo + galón embutido (AMS) |
 | `CTRL-04L_acrilico_3mm` | corte láser | DXF/SVG: capa roja = corte, azul = grabado |
 
 **Identidad visual:** paleta verde limón + morado índigo con perillas inspiradas en Buzz Lightyear (alas del jetpack con el galón de Star Command).
+
+**Tapa protectora:** encaja a presión sobre el marco y cubre la visera y las perillas; tiene un paso para el USB-C trasero y muescas para el pulgar.
+
+![Tapa](docs/renders/tapa_vistas.png)
 
 | Paleta de colores | Perillas |
 |---|---|
