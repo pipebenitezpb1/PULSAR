@@ -181,7 +181,7 @@ La caja se conecta a una página web que muestra todo en tiempo real y la convie
 
 1. Abre el dashboard en **Google Chrome o Microsoft Edge** (Safari y Firefox no permiten conectarse por USB):
    - archivo local: `dashboard/index.html` de este repositorio, o
-   - el sitio privado del autor (pide usuario y clave).
+   - en línea: **https://sintetizador.insta3d.cl** (carga tu propia canción con **Cargar MP3**).
 2. Aprieta **Conectar** y elige el puerto de la caja (en Windows, un **COM**; en Mac, **usbmodem**).
 3. El estado cambia a **Conectado** y los paneles empiezan a moverse.
 
