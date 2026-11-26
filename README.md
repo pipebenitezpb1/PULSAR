@@ -13,7 +13,7 @@ Controlador MIDI-style de escritorio: dos faders deslizantes, cuatro pulsadores,
 
 > 📘 **[Manual de uso](MANUAL.md)**: cómo usar cada control, las combinaciones, los juegos y el sintetizador web. También en [cuadernillo para imprimir](docs/manual_PULSAR_cuadernillo.pdf) (A4 a doble cara, doblado al medio) y en [PDF para pantalla](docs/manual_PULSAR.pdf).
 >
-> **Video de demostración:** _(pendiente: pegar aquí el enlace de YouTube)_
+> **Video:** ver [Video demostrativo](#video-demostrativo) · **Propuesta de mejora:** [PULSAR 2.0](https://portafolio.insta3d.cl/pulsar-mejora/)
 
 ---
 
@@ -239,3 +239,30 @@ python cad/caja_laser.py
 ```
 
 Los archivos se generan en `salida_laser/`. `cad/perillas_buzz.py` y `cad/patas_tpu.py` generan las perillas y las patas.
+
+---
+
+## Ficha para el Taller de Diseño de Interfaces
+
+**Unidad 2 · Interfaces Físicas · Entrega 1** · Taller de Diseño de Interfaces, Universidad Adolfo Ibáñez · 2026 · Ficha en el portafolio: [https://portafolio.insta3d.cl/pulsar/](https://portafolio.insta3d.cl/pulsar/)
+
+### Objetivos
+- Diseñar un controlador físico con entradas continuas (faders) y discretas (botones) y salidas de luz, pantalla y sonido.
+- Fabricar un shield propio y una carcasa paramétrica con impresión 3D y corte láser.
+- Conectar el objeto a la web (Web Serial + Web Audio) y a programas de música (MIDI).
+
+### Público y contexto de uso
+Personas que hacen o juegan con música en el escritorio: estudiantes, DJ aficionados y público de una muestra. Se usa sentado frente a un computador con Chrome o Edge.
+
+### Proceso e iteraciones
+Ver [Proceso de fabricación](#proceso-de-fabricación) y [Evolución del diseño](#evolución-del-diseño): 20 fotos en `docs/fotos/` (primer prototipo, maqueta MDF, redistribución, layout final, impresión, corte láser, soldadura) y renders en `docs/renders/`.
+
+> 📌 **Por aportar:** resultados de pruebas con usuarios (quién lo probó, qué no entendió, qué se cambió).
+
+### Video demostrativo
+Render animado del modelo 3D: [pulsar_render.mp4](https://portafolio.insta3d.cl/pulsar/pulsar_render.mp4).
+
+> 📌 **Por aportar:** video del controlador funcionando (faders, juegos, sintetizador web), subido a YouTube y enlazado aquí.
+
+### Propuesta de mejora
+Diagnóstico y plan de trabajo para una versión 2.0 (PCB, MIDI USB nativo, carcasa en PETG): [https://portafolio.insta3d.cl/pulsar-mejora/](https://portafolio.insta3d.cl/pulsar-mejora/)
